@@ -113,6 +113,9 @@ namespace AssetPackage
 
         private static Dictionary<String, Type> typeMapper = new Dictionary<String, Type>();
 
+#warning DEBUG CODE!!!
+        private static Boolean xmlStructureOnly = true;
+
         #endregion Fields
 
         #region Constructors
@@ -137,17 +140,26 @@ namespace AssetPackage
             Stopwatch sw = new Stopwatch();
 
 #warning creating the serializers for Node<T> adn List<String> is very costly (1.5 seconds)!
+
             sw.Reset();
             sw.Start();
             {
-                // 750 ms for Node<T>
-                serializers.Add(typeof(Node), new XmlSerializer(typeof(Node)));
+                // 750 ms for Node
+                // 
+                //! These class/list/array based ones now give a 'File Not Found' Exception
+                //! Solution 1) (NOT WORKING)   Just change the Generate serialization assembly drop-down to "On", instead of "Auto".
+                //! Solution 2) (WORKING)       Use another method.
+
+                // serializers.Add(typeof(Node), new XmlSerializer(typeof(Node)));
+                // serializers.Add(typeof(List<Node>), new XmlSerializer(typeof(List<Node>)));
+                serializers.Add(typeof(Node), XmlSerializer.FromTypes(new[] { typeof(Node) })[0]);
+                serializers.Add(typeof(List<Node>), XmlSerializer.FromTypes(new[] { typeof(List<Node>) })[0]);
+
                 // 1150 ms for List<String>
-                serializers.Add(typeof(List<String>), new XmlSerializer(typeof(List<String>)));
-                serializers.Add(typeof(String[]), new XmlSerializer(typeof(String[])));
+                //serializers.Add(typeof(List<String>), new XmlSerializer(typeof(List<String>)));
+                //serializers.Add(typeof(String[]), new XmlSerializer(typeof(String[])));
                 // 1725 ms for both
                 // 
-                serializers.Add(typeof(List<Node>), new XmlSerializer(typeof(List<Node>)));
 
                 serializers.Add(typeof(String), new XmlSerializer(typeof(String)));
                 serializers.Add(typeof(Boolean), new XmlSerializer(typeof(Boolean)));
@@ -944,18 +956,18 @@ namespace AssetPackage
                 //! 15) Skip </node>.
                 reader.ReadEndElement();
             }
-            else
-            {
-                //! 15) Skip </node>.
-                //reader.ReadEndElement();
-            }
+            //else
+            //{
+            //    //! 15) Skip </node>.
+            //    //reader.ReadEndElement();
+            //}
 
-            //! 15) Skip </node>.
-            // 
-            if (!reader.IsStartElement("node"))
-            {
-                //reader.ReadEndElement();
-            }
+            ////! 15) Skip </node>.
+            //// 
+            //if (!reader.IsStartElement("node"))
+            //{
+            //    //reader.ReadEndElement();
+            //}
         }
 
         /// <summary>
@@ -983,12 +995,13 @@ namespace AssetPackage
 
             //! 3) If there is a value present, serialize it as a <value> tag.
             //  
-            //if (this.Value != null)
-            //{
-            //    writer.WriteStartElement("value");
-            //    GetSerializer(this.Value.GetType()).Serialize(writer, this.Value);
-            //    writer.WriteEndElement();
-            //}
+            if (this.Value != null && !xmlStructureOnly)
+            {
+#warning DEBUG CODE
+                writer.WriteStartElement("value");
+                GetSerializer(this.Value.GetType()).Serialize(writer, this.Value);
+                writer.WriteEndElement();
+            }
 
             //! 4) If there are children present, serialize it as a <children> tag.
             if (this.Count != 0)
@@ -1026,7 +1039,8 @@ namespace AssetPackage
             {
                 Debug.Print("Caching Serializer for {0}", type.Name);
 
-                serializers.Add(type, new XmlSerializer(type));
+                //serializers.Add(type, new XmlSerializer(type));
+                serializers.Add(type, XmlSerializer.FromTypes(new[] { type })[0]);
             }
 
             return serializers[type];
@@ -1039,15 +1053,20 @@ namespace AssetPackage
         /// <returns>
         /// This object as a String.
         /// </returns>
-        public String ToXml()
+        public String ToXml(Boolean structureOnly = true)
         {
             using (StringWriterUtf8 textWriter = new StringWriterUtf8())
             {
+#warning DEBUG CODE
+                xmlStructureOnly = structureOnly;
+
                 XmlSerializer ser = GetSerializer(GetType());
 
                 ser.Serialize(textWriter, this);
 
                 textWriter.Flush();
+
+                xmlStructureOnly = true;
 
                 return textWriter.ToString();
             }
@@ -1118,15 +1137,22 @@ namespace AssetPackage
             {
                 StreamingContext sc = new StreamingContext(StreamingContextStates.All, structureOnly);
 
+                //! Deserializes the whole tree.
+                //
                 Node tmp = (Node)new BinaryFormatter(null, sc).Deserialize(ms);
 
 #warning Does Parent work properly (seems a bit odd as it's not serialized)?
 
+                //! Assign this tree to our rootnode.
+                // 
                 this.Name = tmp.Name;
                 this.Parent = tmp.Parent;
                 this.children = tmp.children;
                 this.storageLocation = tmp.storageLocation;
-                // this.Value = tmp.Value;
+                if (!structureOnly)
+                {
+                    this.Value = tmp.Value;
+                }
             }
         }
 
@@ -1189,7 +1215,7 @@ namespace AssetPackage
             if ((context.Context == null || context.Context.Equals(false)) && this.Value != null)
             {
                 info.AddValue("type", this.Value.GetType());
-                // info.AddValue("value", this.Value);
+                info.AddValue("value", this.Value);
             }
         }
 

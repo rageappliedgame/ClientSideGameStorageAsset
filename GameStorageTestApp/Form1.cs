@@ -29,6 +29,7 @@ namespace UserModel
     {
         GameStorageClientAsset storage = new GameStorageClientAsset();
 
+        [Serializable]
         public struct DemoStruct
         {
             public int a;
@@ -263,11 +264,30 @@ namespace UserModel
         {
             BuildDemo();
 
-            String base64 = storage["Test"].ToBinary(true);
-            storage["Test"].Clear();
-            storage["Test"].FromBinary(base64, true);
+            String base64 = String.Empty;
 
-            textBox1.Text = storage["Test"].ToXml();
+            Stopwatch sw = new Stopwatch();
+
+            {
+                sw.Reset();
+                sw.Start();
+
+                base64 = storage["Test"].ToBinary(false);
+
+                Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
+            }
+
+            storage["Test"].Clear();
+            {
+                sw.Reset();
+                sw.Start();
+
+                storage["Test"].FromBinary(base64, false);
+
+                Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
+            }
+
+            textBox1.Text = storage["Test"].ToXml(false);
         }
     }
 }
