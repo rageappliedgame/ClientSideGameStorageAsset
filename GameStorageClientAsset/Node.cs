@@ -56,6 +56,32 @@ namespace AssetPackage
     //! Data types zijn ValueType (no quotes), Dates (formattted) en de rest strings & lists/arrays.
     //! Als we Xml-Json conversie gebruiken moet het format moet bi-directioneel zijn. bv @ prefix voor attributen
 
+    // StorageType.Local:
+    //     Can change isDirty.
+    //     Is serialized including a value.
+    //     ReadOnly is false.
+    //     Can be retrieved and stored on a server.
+    // 
+    // StorageType.Transient:
+    //     Cannot change isDirty.
+    //     Only definition is serialized.
+    //     ReadOnly is false.
+    //     Will not be retrieved or stored on a server.
+    // 
+    // StorageType.Game:
+    //     Cannot change IsDirty.
+    //     Only definition is serialized.
+    //     ReadOnly is true.
+    //     Will not be retrieved or stored on a server.
+    //     Value is supplied by Bridge/Game Engine.
+    // 
+    // StorageType.Server:
+    //     Cannot change IsDirty.
+    //     Only definition is serialized.
+    //     ReadOnly is true.
+    //     Cannot be stored on a server.
+    //     Value is retrieved once from a server.
+
     /// <summary>
     /// Values that represent storage locations.
     /// </summary>
@@ -109,12 +135,33 @@ namespace AssetPackage
         /// </summary>
         private StorageLocations storageLocation = StorageLocations.Inherited;
 
+        /// <summary>
+        /// The value backing field.
+        /// </summary>
+        private Object value = null;
+
+        /// <summary>
+        /// The XmlSerializer cache.
+        /// </summary>
         private static Dictionary<Type, XmlSerializer> serializers = new Dictionary<Type, XmlSerializer>();
 
+        /// <summary>
+        /// The type mapper cache.
+        /// </summary>
         private static Dictionary<String, Type> typeMapper = new Dictionary<String, Type>();
 
 #warning DEBUG CODE!!!
         private static Boolean xmlStructureOnly = true;
+
+        /// <summary>
+        /// The owner, only valid on Root Node.
+        /// </summary>
+        private GameStorageClientAsset Owner = null;
+
+        /// <summary>
+        /// The purpose, only valid on Root Node.
+        /// </summary>
+        private String Purpose = null;
 
         #endregion Fields
 
@@ -238,13 +285,23 @@ namespace AssetPackage
         }
 
         /// <summary>
+        /// Prevents a default instance of the AssetPackage.Node class from being
+        /// created.
+        /// </summary>
+        private Node()
+        {
+            //
+        }
+
+        /// <summary>
         /// Initializes a new instance of the AssetPackage.Node class.
         /// </summary>
         /// <remarks>This method generates a Root Node with a StorageLocation set to Local</remarks>
-        public Node()
+        public Node(GameStorageClientAsset owner, string purpose)
             : this(null, root, null, StorageLocations.Local)
         {
-            //
+            Owner = owner;
+            Purpose = purpose;
         }
 
         /// <summary>
@@ -255,11 +312,13 @@ namespace AssetPackage
         /// This method generates a Root Node.
         /// </remarks>
         ///
+        /// <param name="owner">           The owner. </param>
         /// <param name="StorageLocation"> The storage location. </param>
-        public Node(StorageLocations StorageLocation)
+        public Node(GameStorageClientAsset owner, string purpose, StorageLocations StorageLocation)
             : this(null, root, null, StorageLocation)
         {
-            //
+            Owner = owner;
+            Purpose = purpose;
         }
 
         /// <summary>
@@ -446,6 +505,29 @@ namespace AssetPackage
         }
 
         /// <summary>
+        /// Gets the root.
+        /// </summary>
+        ///
+        /// <value>
+        /// The root.
+        /// </value>
+        [XmlIgnore]
+        public Node Root
+        {
+            get
+            {
+                Node tmp = this;
+
+                while (tmp.Parent != null)
+                {
+                    tmp = tmp.Parent;
+                }
+
+                return tmp;
+            }
+        }
+
+        /// <summary>
         /// Gets the storage location.
         /// </summary>
         ///
@@ -481,8 +563,37 @@ namespace AssetPackage
         /// </value>
         public Object Value
         {
-            get;
-            set;
+            get
+            {
+                switch (StorageLocation)
+                {
+                    case StorageLocations.Game:
+                        {
+                            IVirtualProperties ds = Root.Owner.GetInterface<IVirtualProperties>();
+
+                            if (ds != null)
+                            {
+                                return ds.LookupValue(Purpose, Name);
+                            }
+                        }
+                        return null;
+                    default:
+                        return this.value;
+                }
+            }
+            set
+            {
+                switch (StorageLocation)
+                {
+                    case StorageLocations.Game:
+                        //! Should not happen.
+                        break;
+                    default:
+                        //! TODO Add Dirty Bit?
+                        this.value = value;
+                        break;
+                }
+            }
         }
 
         #endregion Properties

@@ -94,27 +94,37 @@ namespace UserModel
 
         private void button1_Click(object sender, EventArgs e)
         {
-            textBox1.Text = "";
+            textBox1.Clear();
+            textBox2.Clear();
 
             BuildDemo();
 
             Stopwatch sw = new Stopwatch();
-
-            sw.Reset();
-            sw.Start();
-            textBox1.Text = storage["Test"].ToXml();
-            sw.Stop();
-            Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
+            {
+                sw.Reset();
+                sw.Start();
+                textBox2.Text = storage["Test"].ToXml();
+                sw.Stop();
+                Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
+            }
+            {
+                sw.Reset();
+                sw.Start();
+                textBox1.Text = storage["Test"].ToXml(false);
+                sw.Stop();
+                Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
+            }
 
             //GameStorageAsset x = usermodel.ResolveStorage("Hints.Test.Age");
 
             //Object value = usermodel.ResolveValue(("Hints.Test.Age"));
-
-            sw.Reset();
-            sw.Start();
-            storage.SaveStructure("Test", StorageLocations.Local);
-            sw.Stop();
-            Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
+            {
+                sw.Reset();
+                sw.Start();
+                storage.SaveStructure("Test", StorageLocations.Local);
+                sw.Stop();
+                Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
+            }
 
             Debug.Print("{0}={1}", "Hints.Test.Age", storage["User"]["Age"]);
         }
@@ -180,23 +190,31 @@ namespace UserModel
         private void button2_Click(object sender, EventArgs e)
         {
             textBox1.Clear();
+            textBox2.Clear();
 
             BuildDemo();
 
             Stopwatch sw = new Stopwatch();
+            {
+                sw.Reset();
+                sw.Start();
+                storage.LoadStructure("Test", StorageLocations.Local);
+                sw.Stop();
+                Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
+            }
 
-            sw.Reset();
-            sw.Start();
-            storage.LoadStructure("Test", StorageLocations.Local);
-            sw.Stop();
-            Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
-
-            textBox1.Text = storage["Test"].ToXml();
+            textBox1.Text = storage["Test"].ToXml(false);
+            textBox2.Text = storage["Test"].ToXml(true);
         }
 
         private void button3_Click(object sender, EventArgs e)
         {
-            //textBox1.Clear();
+            BuildDemo();
+
+            textBox1.Clear();
+            textBox2.Clear();
+
+            textBox1.Text += storage["User"]["Virtual"].Value.ToString();
 
             //usermodel.Clear();
 
@@ -231,25 +249,27 @@ namespace UserModel
 
         private void button4_Click(object sender, EventArgs e)
         {
+            textBox1.Clear();
+            textBox2.Clear();
+
             WikiExampleTree(storage["Wiki"]);
 
-            textBox1.Clear();
-
             Stopwatch sw = new Stopwatch();
-
-            sw.Reset();
-            sw.Start();
-
-            foreach (Node node in storage["Wiki"].PrefixEnumerator())
             {
-                if (node.Value != null)
-                {
-                    string xml = node.ToXmlValue();
-                }
-            }
+                sw.Reset();
+                sw.Start();
 
-            sw.Stop();
-            Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
+                foreach (Node node in storage["Wiki"].PrefixEnumerator())
+                {
+                    if (node.Value != null)
+                    {
+                        string xml = node.ToXmlValue();
+                    }
+                }
+
+                sw.Stop();
+                Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
+            }
 
             foreach (Node node in storage["Wiki"].PrefixEnumerator())
             {
@@ -263,6 +283,9 @@ namespace UserModel
         private void button5_Click(object sender, EventArgs e)
         {
             BuildDemo();
+
+            textBox1.Clear();
+            textBox2.Clear();
 
             String base64 = String.Empty;
 
@@ -288,6 +311,7 @@ namespace UserModel
             }
 
             textBox1.Text = storage["Test"].ToXml(false);
+            textBox2.Text = storage["Test"].ToXml(true);
         }
     }
 }

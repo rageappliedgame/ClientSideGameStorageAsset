@@ -299,17 +299,9 @@ namespace UserModel
         //    return String.Format("{0}.value", key);
         //}
 
-        public object LookupValue(string key, Type type)
+        public object LookupValue(string model, string key)
         {
-            if (type.IsAssignableFrom(typeof(String)))
-            {
-                return "Hello Virtual World";
-            }
-            else if (type.IsAssignableFrom(typeof(Int32)))
-            {
-                return 41;
-            }
-            else if (type.IsAssignableFrom(typeof(DateTime)))
+            if (key.Equals("Virtual"))
             {
                 return DateTime.Now;
             }

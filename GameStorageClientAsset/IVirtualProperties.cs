@@ -24,43 +24,19 @@ namespace AssetPackage
     /// </summary>
     public interface IVirtualProperties
     {
-        // TODO: Add Purpose Identifier to pass the model type?
-
         #region Methods
-
-        ///// <summary>
-        ///// Looks up a given key to find its associated value.
-        ///// </summary>
-        /////
-        ///// <typeparam name="T"> Generic type parameter. </typeparam>
-        ///// <param name="key"> The key. </param>
-        /////
-        ///// <returns>
-        ///// A T value.
-        ///// </returns>
-        //T LookupValue<T>(String key);
-
-        ///// <summary>
-        ///// Looks up a given key to find its associated value.
-        ///// </summary>
-        /////
-        ///// <param name="key"> The key. </param>
-        /////
-        ///// <returns>
-        ///// An Object.
-        ///// </returns>
-        //Object LookupValue(String key);
 
         /// <summary>
         /// Looks up a given key to find its associated value.
         /// </summary>
         ///
-        /// <param name="type"> The key. </param>
+        /// <param name="model"> The model. </param>
+        /// <param name="key">   The key. </param>
         ///
         /// <returns>
         /// An Object.
         /// </returns>
-        Object LookupValue(String key, Type type);
+        Object LookupValue(String model, String key);
 
         #endregion Methods
     }

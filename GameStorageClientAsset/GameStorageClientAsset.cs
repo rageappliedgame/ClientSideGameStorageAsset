@@ -44,9 +44,11 @@ namespace AssetPackage
         /// </summary>
         ///
         /// <param name="purpose"> The purpose. </param>
-        public void AddModel(String purpose)
+        public Node AddModel(String purpose)
         {
-            Models.Add(purpose, new Node());
+            Models.Add(purpose, new Node(this, purpose));
+
+            return Models[purpose];
         }
 
 #warning ADD SETTINGS CLASS
@@ -160,6 +162,12 @@ namespace AssetPackage
             }
         }
 
+        /// <summary>
+        /// Loads a structure.
+        /// </summary>
+        ///
+        /// <param name="model">    The model. </param>
+        /// <param name="location"> The location. </param>
         public void LoadStructure(String model, StorageLocations location)
         {
             //! TODO Add binary parameter.
@@ -180,7 +188,7 @@ namespace AssetPackage
                             }
                             else
                             {
-                                Models[model] = new Node();
+                                Models[model] = new Node(this, model);
                             }
 
                             Models[model].FromXml(storage.Load(model + ".xml"));
@@ -196,6 +204,20 @@ namespace AssetPackage
                     Debug.Print("Not implemented yet");
                     break;
             }
+        }
+
+        /// <summary>
+        /// Gets the interface.
+        /// </summary>
+        ///
+        /// <typeparam name="T"> Generic type parameter. </typeparam>
+        ///
+        /// <returns>
+        /// The interface.
+        /// </returns>
+        internal T GetInterface<T>()
+        {
+            return base.getInterface<T>();
         }
     }
 }

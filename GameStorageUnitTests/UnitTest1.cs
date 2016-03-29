@@ -15,7 +15,16 @@
     [TestClass]
     public class UnitTest1
     {
+        #region Constants
+#warning TEST IF RESTORING WORKS (STRUCTURE-ONLY BT DEFAULT).
+        const string modelId = "test";
+        const string restoredId = "restored";
+
+        #endregion Constants
+
         #region Fields
+
+        private GameStorageClientAsset asset;
 
         private Node root;
 
@@ -31,6 +40,7 @@
         [TestCleanup]
         public void Cleanup()
         {
+            asset[modelId].Clear();
         }
 
         /// <summary>
@@ -41,7 +51,10 @@
         public void Initialize()
         {
             Debug.Print("-------");
-            root = new Node();
+
+            asset.AddModel(modelId);
+
+            root = asset[modelId];
         }
 
         /// <summary>
@@ -384,7 +397,7 @@
             sw.Stop();
             Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
 
-            Node restored = new Node();
+            Node restored = asset.AddModel(restoredId);
 
             sw.Reset();
             sw.Start();
@@ -445,7 +458,7 @@
                 sw.Stop();
                 Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
 
-                Node restored = new Node();
+                Node restored = asset.AddModel(restoredId);
 
                 ms.Flush();
                 ms.Seek(0, SeekOrigin.Begin);
@@ -515,7 +528,7 @@
                 sw.Stop();
                 Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
 
-                Node restored = new Node();
+                Node restored = asset.AddModel(restoredId);
 
                 ms.Flush();
                 ms.Seek(0, SeekOrigin.Begin);
@@ -583,7 +596,7 @@
 
             sw.Reset();
             sw.Start();
-            Node restored = new Node();
+            Node restored = asset.AddModel(restoredId);
             restored.FromBinary(base64);
             sw.Stop();
             Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
