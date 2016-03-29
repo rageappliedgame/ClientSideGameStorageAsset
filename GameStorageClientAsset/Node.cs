@@ -38,19 +38,27 @@ namespace AssetPackage
     // DONE Binary De-Serialization
     // DONE Binary Serialization
     // DONE Utility Methods like Clear().
-    //
+    // DONE Tie to IVirtualProperty Interface
+    // DONE Rename asset to GameStorageClientAsset.
+    // 
     // TODO Decide: Skip Root Item in Prefix/PostFix Enumerators?
     // TODO Add search for Path.
     // TODO Read-Only flag
-    // TODO Tie to IVirtualProperty Interface
+    // 
     // TODO Tie to UCM Tracker/GameStorage.
-    // TODO Rename Asset to GameStorage
     // TODO Add AddSibling() Method to make definitions more fluid?
     //
     // TODO Json De-Serialization (use external serializer like NewtonSoft.net that comes with an MIT license)?
     // TODO Json Serialization
     //
     // TODO Test performance without generic parameter & casting.
+    //
+    // TODO Extend Json Serialization (now a flat array of path/(xml)value).
+    // 
+    // ISSUE When doing ToXml() the code seems to be using some kind of copy as Purpose and Owner are no longer set.
+    //       This gives issues with the Value property.
+    // ISSUE Supplying data during tree construction to Nodes with a StorageLocation Game (or inherited) is possible but illegal.
+    //       Maybe add some checks for it.
     //
     //! Serialize Structure with Xml/Binary, values with Json (so a simple format like "node: { path: xx; value: yy}")
     //! Data types zijn ValueType (no quotes), Dates (formattted) en de rest strings & lists/arrays.
@@ -161,7 +169,12 @@ namespace AssetPackage
         /// <summary>
         /// The purpose, only valid on Root Node.
         /// </summary>
-        private String Purpose = null;
+        public String Purpose
+        {
+            get;
+            /*private*/
+            set;
+        }
 
         #endregion Fields
 
@@ -320,6 +333,21 @@ namespace AssetPackage
             Owner = owner;
             Purpose = purpose;
         }
+
+        /// <summary>
+        /// Initializes a new instance of the AssetPackage.Node class.
+        /// </summary>
+        ///
+        /// <param name="previousNode"> The previous node. </param>
+        public Node(Node previousNode)
+        {
+            Name = previousNode.Name;
+            Purpose = previousNode.Purpose;
+            storageLocation = previousNode.storageLocation;
+            value = previousNode.value;
+            children = previousNode.children;
+        }
+
 
         /// <summary>
         /// Initializes a new instance of the AssetPackage.Node class with a StorageLocation set to Inherited.
@@ -569,14 +597,26 @@ namespace AssetPackage
                 {
                     case StorageLocations.Game:
                         {
-                            IVirtualProperties ds = Root.Owner.GetInterface<IVirtualProperties>();
-
-                            if (ds != null)
+                            if (!(Root == null || Root.Owner == null || String.IsNullOrEmpty(Root.Purpose)))
                             {
-                                return ds.LookupValue(Purpose, Name);
+                                IVirtualProperties ds = Root.Owner.GetInterface<IVirtualProperties>();
+
+                                if (ds != null)
+                                {
+                                    return ds.LookupValue(Root.Purpose, Name);
+                                }
+
+
+                                //! Bridge not present.
+                                // 
+                                return null;
+                            }
+                            else
+                            {
+                                //! BUG Owner is not correct after FromBinary followed by ToXml(false).
+                                return null;
                             }
                         }
-                        return null;
                     default:
                         return this.value;
                 }
@@ -708,6 +748,17 @@ namespace AssetPackage
             return AddChild(Name, Value, StorageLocations.Inherited);
         }
 
+        /// <summary>
+        /// Adds a child to 'Value'.
+        /// </summary>
+        ///
+        /// <param name="Name">     The name. </param>
+        /// <param name="Value">    The value. </param>
+        /// <param name="Location"> The location. </param>
+        ///
+        /// <returns>
+        /// A Node&lt;T&gt;
+        /// </returns>
         public Node AddChild(String Name, Object Value, StorageLocations Location)
         {
             if (children == null)
@@ -1089,9 +1140,16 @@ namespace AssetPackage
         ///                         to which the object is serialized. </param>
         public void WriteXml(XmlWriter writer)
         {
+            Debug.Print(this.Name);
+
             //! 1) Add name as an attribute to <node>.
             // 
             writer.WriteAttributeString("name", this.Name);
+
+            if (IsRoot)
+            {
+                writer.WriteAttributeString("purpose", this.Purpose);
+            }
 
             // Debug Code.
             // writer.WriteAttributeString("path", this.Path);
@@ -1105,12 +1163,14 @@ namespace AssetPackage
             }
 
             //! 3) If there is a value present, serialize it as a <value> tag.
-            //  
-            if (this.Value != null && !xmlStructureOnly)
+            //!    Using the Value property is not an option as it tries to retrieve Virtual Propeties too.
+            //!    The model being serialized seems a kind of incomplete copy.
+            // 
+            if (!xmlStructureOnly && this.value != null)
             {
 #warning DEBUG CODE
                 writer.WriteStartElement("value");
-                GetSerializer(this.Value.GetType()).Serialize(writer, this.Value);
+                GetSerializer(this.value.GetType()).Serialize(writer, this.value);
                 writer.WriteEndElement();
             }
 
@@ -1150,8 +1210,8 @@ namespace AssetPackage
             {
                 Debug.Print("Caching Serializer for {0}", type.Name);
 
-                //serializers.Add(type, new XmlSerializer(type));
-                serializers.Add(type, XmlSerializer.FromTypes(new[] { type })[0]);
+                serializers.Add(type, new XmlSerializer(type));
+                //serializers.Add(type, XmlSerializer.FromTypes(new[] { type })[0]);
             }
 
             return serializers[type];
@@ -1190,6 +1250,7 @@ namespace AssetPackage
         /// <returns>
         /// This object as a String.
         /// </returns>
+        [Obsolete]
         public String ToXmlValue()
         {
             if (Value != null)
@@ -1238,10 +1299,6 @@ namespace AssetPackage
         ///
         /// <param name="base64">        The fourth base 6. </param>
         /// <param name="structureOnly">    true to serialize only the structure. </param>
-        ///
-        /// <returns>
-        /// A String.
-        /// </returns>
         public void FromBinary(String base64, Boolean structureOnly = false)
         {
             using (MemoryStream ms = new MemoryStream(Convert.FromBase64String(base64)))
@@ -1252,16 +1309,22 @@ namespace AssetPackage
                 //
                 Node tmp = (Node)new BinaryFormatter(null, sc).Deserialize(ms);
 
-#warning Does Parent work properly (seems a bit odd as it's not serialized)?
+                //! We now have a complete deserialized tree in tmp, including a new root node.
+                //! We now have to copy some fields from tmp to this, the root node
+                //! of the model in the GameStorageClientAsset Models collection.
 
-                //! Assign this tree to our rootnode.
+                //! Purpose and Owner are still set correctly in the Models Node (a.k.a this) 
+                //! as we are only restoring it's children and storageLocation backing fields.
                 // 
-                this.Name = tmp.Name;
-                this.Parent = tmp.Parent;
+                //! tmp.Name should be 'root' and tmp.Parent and tmp.Value should both be null.
+                // 
                 this.children = tmp.children;
+
                 this.storageLocation = tmp.storageLocation;
                 if (!structureOnly)
                 {
+                    //! Root should not have  a value.
+                    // 
                     this.Value = tmp.Value;
                 }
             }
@@ -1381,6 +1444,60 @@ namespace AssetPackage
             disposed = true;
         }
         */
+
+        /// <summary>
+        /// Converts this object to a JSON.
+        /// </summary>
+        ///
+        /// <returns>
+        /// This object as a string.
+        /// </returns>
+        public string ToJson(List<StorageLocations> locations)
+        {
+            StringBuilder json = new StringBuilder();
+
+            // Open array.
+            json.AppendLine("[");
+
+            foreach (Node node in this.PrefixEnumerator(locations))
+            {
+                if (node.Value != null)
+                {
+                    // Append 'path': 'value',
+                    json.AppendLine(node.ToJsonValue());
+                }
+            }
+
+            // Trim trailing ','.
+            Int32 ndx = json.ToString().LastIndexOf(",");
+            json.Length = ndx;
+
+            // Close array.
+            json.AppendLine();
+            json.AppendLine("]");
+
+            return json.ToString();
+        }
+
+        /// <summary>
+        /// Converts this object to a JSON value.
+        /// </summary>
+        ///
+        /// <returns>
+        /// This object as a String.
+        /// </returns>
+        public String ToJsonValue()
+        {
+            if (value.GetType().IsPrimitive)
+            {
+                return String.Format("\"{0}\" : {1},", Path, Value);
+            }
+            else if (value is DateTime)
+            {
+                return String.Format("\"{0}\" : \"{1}\",", Path, ((DateTime)Value).ToString("O"));
+            }
+            return String.Format("\"{0}\" : \"{1}\",", Path, Value);
+        }
 
         #endregion Methods
 

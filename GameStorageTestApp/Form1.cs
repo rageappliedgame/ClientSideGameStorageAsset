@@ -63,9 +63,13 @@ namespace UserModel
         {
             root.Clear();
 
+            List<byte> data = new List<byte>();
+            data.AddRange(new byte[] { 1, 2, 3, 4, 5 });
+
             Node F = root.AddChild("F", "F");
             Node B = F.AddChild("B", "B");
             B.AddChild("A", "A");
+            B.Value = data;
             Node D = B.AddChild("D", DateTime.Now);
             D.AddChild("C", new DemoStruct
             {
@@ -76,10 +80,7 @@ namespace UserModel
 
             D.AddChild("E", (Byte)5);
 
-            List<byte> data = new List<byte>();
-            data.AddRange(new byte[] { 1, 2, 3, 4, 5 });
-
-            F.AddChild("G", data, StorageLocations.Game)
+            F.AddChild("G", StorageLocations.Game)
                 .AddChild("I", "I")
                 .AddChild("H", new string[] { "1", "2", "3", "4", "5", "6", "7", "8", "9", "0" }
                 //.AddChild("H", "H"
@@ -103,7 +104,7 @@ namespace UserModel
             {
                 sw.Reset();
                 sw.Start();
-                textBox2.Text = storage["Test"].ToXml();
+                //textBox2.Text = storage["Test"].ToXml();
                 sw.Stop();
                 Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
             }
@@ -271,6 +272,9 @@ namespace UserModel
                 Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
             }
 
+            textBox2.Text += storage["Wiki"].ToJson(new List<StorageLocations>() { StorageLocations.Local });
+
+
             foreach (Node node in storage["Wiki"].PrefixEnumerator())
             {
                 if (node.Value != null)
@@ -309,9 +313,12 @@ namespace UserModel
 
                 Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
             }
+            Debug.Print(storage["Test"].Purpose);
 
             textBox1.Text = storage["Test"].ToXml(false);
-            textBox2.Text = storage["Test"].ToXml(true);
+            textBox2.Text = storage["Test"].ToXml();
+
+            Debug.Print(storage["Test"].Purpose);
         }
     }
 }

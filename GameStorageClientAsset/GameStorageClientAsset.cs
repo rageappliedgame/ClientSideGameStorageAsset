@@ -206,6 +206,35 @@ namespace AssetPackage
             }
         }
 
+        public void SaveData(String model, StorageLocations location)
+        {
+            if (Models.ContainsKey(model))
+            {
+                switch (location)
+                {
+                    case StorageLocations.Local:
+                        IDataStorage storage = getInterface<IDataStorage>();
+
+                        if (storage != null)
+                        {
+                            storage.Save(model + ".json", Models[model].ToJson(new List<StorageLocations> { location }));
+                        }
+                        else
+                        {
+                            Debug.Print("IDataStorage interface not found a Bridge");
+                        }
+                        break;
+
+                    default:
+                        Debug.Print("Not implemented yet");
+                        break;
+                }
+            }
+            else
+            {
+                Debug.Print("Model not found");
+            }
+        }
         /// <summary>
         /// Gets the interface.
         /// </summary>
