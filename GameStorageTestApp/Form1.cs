@@ -21,6 +21,7 @@ namespace UserModel
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Drawing;
+    using System.Threading.Tasks;
     using System.Windows.Forms;
 
     using AssetPackage;
@@ -37,6 +38,9 @@ namespace UserModel
             public DateTime c;
         }
 
+        private String user = "student1";
+        private String pass = "test";
+
         public Form1()
         {
             InitializeComponent();
@@ -48,6 +52,12 @@ namespace UserModel
             storage.AddModel("Test");
 
             storage.AddModel("Wiki");
+
+            (storage.Settings as GameStorageClientAssetSettings).Host = "145.20.132.23";
+            (storage.Settings as GameStorageClientAssetSettings).A2Port = 3000;
+            (storage.Settings as GameStorageClientAssetSettings).Port = 3400;
+            (storage.Settings as GameStorageClientAssetSettings).Secure = false;
+            (storage.Settings as GameStorageClientAssetSettings).BasePath = "/api/";
         }
 
         /// <summary>
@@ -186,6 +196,7 @@ namespace UserModel
             storage["User"].AddChild("Hints", hints);
 
             WikiExampleTree(storage["Test"]);
+            WikiExampleTree(storage["Wiki"]);
         }
 
         private void button2_Click(object sender, EventArgs e)
@@ -274,7 +285,6 @@ namespace UserModel
 
             textBox2.Text += storage["Wiki"].ToJson(new List<StorageLocations>() { StorageLocations.Local });
 
-
             foreach (Node node in storage["Wiki"].PrefixEnumerator())
             {
                 if (node.Value != null)
@@ -319,6 +329,74 @@ namespace UserModel
             textBox2.Text = storage["Test"].ToXml();
 
             Debug.Print(storage["Test"].Purpose);
+        }
+
+        private async void button6_Click(object sender, EventArgs e)
+        {
+            CheckHealth();
+        }
+
+        private bool CheckHealth()
+        {
+            //! Make CheckHealth() async.
+            // 
+            return Task.Factory.StartNew<bool>(() => { return storage.CheckHealth(); }).Result;
+
+            //Task<bool> taskName = Task.Factory.StartNew<bool>(() => { return storage.CheckHealth(); });
+
+            //Debug.Print("Hello1 (during request)");
+
+            //bool Result = taskName.Result;
+
+            //Debug.Print("Hello2 (after request)");
+
+            //return Result;
+        }
+
+        private bool Login()
+        {
+            Task<bool> taskName = Task.Factory.StartNew<bool>(() => { return storage.Login(user, pass); });
+
+            return taskName.Result;
+        }
+
+        private async Task<bool> SaveStructureToServer(string key)
+        {
+            return await Task.Factory.StartNew(() =>
+            {
+                storage.SaveStructure(key, StorageLocations.Server);
+
+                return storage.Connected;
+            });
+        }
+
+        private async Task<bool> LoadStructureFromServer(string key)
+        {
+            return await Task.Factory.StartNew(() =>
+            {
+                storage.LoadStructure(key, StorageLocations.Server);
+
+                return storage.Connected;
+            });
+        }
+
+        private async void button7_Click(object sender, EventArgs e)
+        {
+            CheckHealth();
+            Login();
+
+            BuildDemo();
+
+            foreach (KeyValuePair<String, Node> kvp in storage)
+            {
+                textBox1.Text = storage[kvp.Key].ToXml(false);
+
+                await SaveStructureToServer(kvp.Key);
+                storage[kvp.Key].Clear();
+                await LoadStructureFromServer(kvp.Key);
+
+                textBox2.Text = storage[kvp.Key].ToXml(false);
+            }
         }
     }
 }
