@@ -30,6 +30,8 @@ namespace UserModel
     {
         GameStorageClientAsset storage = new GameStorageClientAsset();
 
+        TextBoxTraceListener textWriter = null;
+
         [Serializable]
         public struct DemoStruct
         {
@@ -45,6 +47,8 @@ namespace UserModel
         {
             InitializeComponent();
 
+            textWriter = new TextBoxTraceListener(textBox3);
+
             storage.Bridge = new Bridge();
 
             storage.AddModel("Hint");
@@ -58,6 +62,10 @@ namespace UserModel
             (storage.Settings as GameStorageClientAssetSettings).Port = 3400;
             (storage.Settings as GameStorageClientAssetSettings).Secure = false;
             (storage.Settings as GameStorageClientAssetSettings).BasePath = "/api/";
+
+            // Catch debugging output.
+            // 
+            Debug.Listeners.Add(textWriter);
         }
 
         /// <summary>
@@ -333,23 +341,34 @@ namespace UserModel
 
         private async void button6_Click(object sender, EventArgs e)
         {
-            CheckHealth();
+            if (storage.CheckHealth())
+            {
+                Debug.Print(storage.Health);
+
+                if (storage.Login(user, pass))
+                {
+                    Debug.Print("Logged-in");
+                }
+            }
         }
 
+        /*
         private bool CheckHealth()
         {
-            //! Make CheckHealth() async.
+            //! Make CheckHealth() async (warning: gives dead-lock with TraceListener).
             // 
-            return Task.Factory.StartNew<bool>(() => { return storage.CheckHealth(); }).Result;
+            {
+                //return Task.Factory.StartNew<bool>(() => { return storage.CheckHealth(); }).Result;
+            }
+            {
+                //Task<bool> taskName = Task.Factory.StartNew<bool>(() => { return storage.CheckHealth(); });
 
-            //Task<bool> taskName = Task.Factory.StartNew<bool>(() => { return storage.CheckHealth(); });
+                //Debug.Print("Hello1 (during request)");
 
-            //Debug.Print("Hello1 (during request)");
+                //bool Result = taskName.Result;
 
-            //bool Result = taskName.Result;
-
-            //Debug.Print("Hello2 (after request)");
-
+                //Debug.Print("Hello2 (after request)");
+            }
             //return Result;
         }
 
@@ -380,23 +399,126 @@ namespace UserModel
             });
         }
 
-        private async void button7_Click(object sender, EventArgs e)
+        private async Task<bool> DeleteStructureFromServer(string key)
         {
-            CheckHealth();
-            Login();
-
-            BuildDemo();
-
-            foreach (KeyValuePair<String, Node> kvp in storage)
+            return await Task.Factory.StartNew(() =>
             {
-                textBox1.Text = storage[kvp.Key].ToXml(false);
+                storage.DeleteStructure(key, StorageLocations.Server);
 
-                await SaveStructureToServer(kvp.Key);
-                storage[kvp.Key].Clear();
-                await LoadStructureFromServer(kvp.Key);
+                return storage.Connected;
+            });
+        }
+        */
 
-                textBox2.Text = storage[kvp.Key].ToXml(false);
+        private /*async*/ void button7_Click(object sender, EventArgs e)
+        {
+            if (storage.Connected)
+            {
+                BuildDemo();
+
+                foreach (KeyValuePair<String, Node> kvp in storage)
+                {
+                    //! Structure + Data.
+                    // 
+                    textBox1.Text = storage[kvp.Key].ToXml(false);
+
+                    storage.DeleteStructure(kvp.Key, StorageLocations.Server);
+
+                    storage.SaveStructure(kvp.Key, StorageLocations.Server);
+                    storage[kvp.Key].Clear();
+                    storage.LoadStructure(kvp.Key, StorageLocations.Server);
+
+                    //! Structure Only.
+                    // 
+                    textBox2.Text = storage[kvp.Key].ToXml(false);
+                }
             }
         }
+
+        #region Nested Types
+
+        /// <summary>
+        /// See http://www.codeproject.com/KB/trace/TextBoxTraceListener.aspx.
+        /// </summary>
+        public class TextBoxTraceListener : TraceListener
+        {
+            #region Fields
+
+            private StringSendDelegate fInvokeWrite;
+
+            /// <summary>
+            /// Target for the.
+            /// </summary>
+            private TextBox fTarget;
+
+            #endregion Fields
+
+            #region Constructors
+
+            /// <summary>
+            /// Initializes a new instance of the Swiss.DebugForm.NextGridTraceListener class.
+            /// </summary>
+            ///
+            /// <param name="target"> Target for the. </param>
+            public TextBoxTraceListener(TextBox target)
+            {
+                fTarget = target;
+                fInvokeWrite = new StringSendDelegate(SendString);
+            }
+
+            #endregion Constructors
+
+            #region Delegates
+
+            /// <summary>
+            /// String send delegate.
+            /// </summary>
+            ///
+            /// <param name="message"> The message. </param>
+            private delegate void StringSendDelegate(string message);
+
+            #endregion Delegates
+
+            #region Methods
+
+            /// <summary>
+            /// When overridden in a derived class, writes the specified message to the listener you create
+            /// in the derived class.
+            /// </summary>
+            ///
+            /// <param name="message"> A message to write. </param>
+            public override void Write(string message)
+            {
+                fTarget.Invoke(fInvokeWrite, new object[] { message });
+            }
+
+            /// <summary>
+            /// When overridden in a derived class, writes a message to the listener you create in the
+            /// derived class, followed by a line terminator.
+            /// </summary>
+            ///
+            /// <param name="message"> A message to write. </param>
+            public override void WriteLine(string message)
+            {
+                fTarget.Invoke(fInvokeWrite, new object[] { message + Environment.NewLine });
+            }
+
+            /// <summary>
+            /// Sends a string.
+            /// </summary>
+            ///
+            /// <param name="message"> A message to write. </param>
+            private void SendString(string message)
+            {
+                // No need to lock text box as this function will only
+                // ever be executed from the UI thread!
+                fTarget.AppendText(message);
+            }
+
+            #endregion Methods
+        }
+
+        #endregion Nested Types
+
     }
 }

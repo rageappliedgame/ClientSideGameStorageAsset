@@ -31,7 +31,7 @@ namespace AssetPackage
     //! Somewhat more utility methods like Remove, Clear!
     //
     //[XmlRoot]
-    public class GameStorageClientAsset : BaseAsset, IWebServiceResponse, IEnumerable
+    public class GameStorageClientAsset : BaseAsset, /*IWebServiceResponse,*/ IEnumerable
     {
         #region Fields
 
@@ -69,6 +69,11 @@ namespace AssetPackage
         /// A Regex to extact the status value from JSON.
         /// </summary>
         private Regex jsonHealth = new Regex(String.Format(TokenRegEx, "status"), RegexOptions.Singleline);
+
+        /// <summary>
+        /// A Regex to extact the message value from JSON.
+        /// </summary>
+        private Regex jsonMessage = new Regex(String.Format(TokenRegEx, "message"), RegexOptions.Singleline);
 
         /// <summary>
         /// Options for controlling the operation.
@@ -355,14 +360,15 @@ namespace AssetPackage
                                    path.TrimStart('/')
                                    )),
                        requestHeaders = headers,
-                       //! allowedResponsCodes,     // default is ok
-                       //! body = String.Empty      // default is ok
+                       //! allowedResponsCodes,     // TODO default is ok
+                       body = body, // or method.Equals("GET")?string.Empty:body
                    }, out response);
             }
 
             return response;
         }
 
+        /*
         /// <summary>
         /// Errors.
         /// </summary>
@@ -375,6 +381,7 @@ namespace AssetPackage
 
             Connected = false;
         }
+        */
 
         /// <summary>
         /// Loads a structure.
@@ -382,7 +389,11 @@ namespace AssetPackage
         ///
         /// <param name="model">    The model. </param>
         /// <param name="location"> The location. </param>
-        public void LoadStructure(String model, StorageLocations location)
+        ///
+        /// <returns>
+        /// true if it succeeds, false if it fails.
+        /// </returns>
+        public Boolean LoadStructure(String model, StorageLocations location)
         {
             //! TODO Add binary parameter.
             //
@@ -406,6 +417,8 @@ namespace AssetPackage
                             }
 
                             Models[model].FromXml(storage.Load(model + ".xml"));
+
+                            return true;
                         }
                     }
                     else
@@ -424,11 +437,26 @@ namespace AssetPackage
                             headers["Accept"] = "application/json";
                             headers["Authorization"] = String.Format("Bearer {0}", settings.UserToken);
 
-                            if (!IssueRequest(
+                            RequestResponse response = IssueRequest2(
                                 String.Format("storage/model/{0}", model),
-                                "GET", headers, String.Empty, settings.Port))
+                                "GET", headers, String.Empty, settings.Port);
+
+                            if (response.ResultAllowed)
                             {
-                                Debug.Print("Problem persisting structure on the GameStorage Server.");
+                                if (jsonStructure.IsMatch(response.body))
+                                {
+                                   String base64 = jsonStructure.Match(response.body).Groups[1].Value;
+
+                                    this[model].FromBinary(base64, true);
+
+                                    Log(Severity.Information, "Structure of Model[{0}] is Restored", model);
+
+                                    return true;
+                                }
+                            }
+                            else
+                            {
+                                Debug.Print("Problem restoring structure from the GameStorage Server.");
                             }
                         }
                         else
@@ -442,6 +470,8 @@ namespace AssetPackage
                     Debug.Print("Not implemented yet");
                     break;
             }
+
+            return false;
         }
 
         /// <summary>
@@ -534,7 +564,11 @@ namespace AssetPackage
         ///
         /// <param name="model">    The model. </param>
         /// <param name="location"> The location. </param>
-        public void SaveStructure(String model, StorageLocations location)
+        ///
+        /// <returns>
+        /// true if it succeeds, false if it fails.
+        /// </returns>
+        public Boolean SaveStructure(String model, StorageLocations location)
         {
             //! TODO Add binary parameter.
             //
@@ -548,6 +582,7 @@ namespace AssetPackage
                         if (storage != null)
                         {
                             storage.Save(model + ".xml", Models[model].ToXml());
+                            return true;
                         }
                         else
                         {
@@ -565,11 +600,24 @@ namespace AssetPackage
                                 headers["Accept"] = "application/json";
                                 headers["Authorization"] = String.Format("Bearer {0}", settings.UserToken);
 
-                                if (!IssueRequest(
+                                RequestResponse response = IssueRequest2(
                                     String.Format("storage/model/{0}", model),
                                     "POST", headers,
                                     String.Format("{{\r\n \"structure\": \"{0}\"}}",
-                                    this[model].ToBinary(true)), settings.Port))
+                                    this[model].ToBinary(true)), settings.Port);
+
+                                if (response.ResultAllowed)
+                                {
+                                    if (jsonMessage.IsMatch(response.body))
+                                    {
+                                        Log(Severity.Information, "Message={0}", jsonMessage.Match(response.body).Groups[1].Value);
+
+                                        Log(Severity.Information, "Structure of Model[{0}] is Saved", model);
+                                    }
+
+                                    return true;
+                                }
+                                else
                                 {
                                     Debug.Print("Problem persisting structure on the GameStorage Server.");
                                 }
@@ -590,8 +638,94 @@ namespace AssetPackage
             {
                 Debug.Print("Model not found");
             }
+
+            return false;
         }
 
+        /// <summary>
+        /// Deletes the Stucture.
+        /// </summary>
+        ///
+        /// <param name="model">    The model. </param>
+        /// <param name="location"> The location. </param>
+        ///
+        /// <returns>
+        /// true if it succeeds, false if it fails.
+        /// </returns>
+        public Boolean DeleteStructure(String model, StorageLocations location)
+        {
+            //! TODO Add binary parameter.
+            //
+            if (Models.ContainsKey(model))
+            {
+                switch (location)
+                {
+                    case StorageLocations.Local:
+                        {
+                            IDataStorage storage = getInterface<IDataStorage>();
+
+                            if (storage != null)
+                            {
+                                return storage.Delete(model + ".xml");
+                            }
+                            else
+                            {
+                                Debug.Print("IDataStorage interface not found a Bridge");
+                            }
+                        }
+                        break;
+
+                    case StorageLocations.Server:
+                        {
+                            if (Connected)
+                            {
+                                Dictionary<string, string> headers = new Dictionary<string, string>();
+
+                                headers["Content-Type"] = "application/json";
+                                headers["Accept"] = "application/json";
+                                headers["Authorization"] = String.Format("Bearer {0}", settings.UserToken);
+
+                                RequestResponse response = IssueRequest2(
+                                    String.Format("storage/model/{0}", model),
+                                    "DELETE", headers, String.Empty, settings.Port);
+
+                                if (response.ResultAllowed)
+                                {
+                                    if (jsonMessage.IsMatch(response.body))
+                                    {
+                                        Log(Severity.Information, "Message={0}", jsonMessage.Match(response.body).Groups[1].Value);
+                                    }
+
+                                    Log(Severity.Information, "Structure of Model[{0}] is Removed", model);
+
+                                    return true;
+                                }
+                                else
+                                {
+                                    Debug.Print("Problem deleting structure on the GameStorage Server.");
+                                }
+                            }
+                            else
+                            {
+                                Debug.Print("Not connected to the GameStorage Server.");
+                            }
+                        }
+                        break;
+
+                    default:
+                        Debug.Print("Not implemented yet");
+                        break;
+                }
+            }
+            else
+            {
+                Debug.Print("Model not found");
+            }
+
+            return false;
+        }
+
+        /*
         public void Success(string url, int code, Dictionary<string, string> headers, string body)
         {
             //! Part of the TrackerAsset Code.
@@ -641,9 +775,10 @@ namespace AssetPackage
 
                 this[model].FromBinary(base64, true);
 
-                Log(Severity.Information, "Strcuture of Model[{0}] is Restored", model);
+                Log(Severity.Information, "Structure of Model[{0}] is Restored", model);
             }
         }
+        */
 
         /// <summary>
         /// Gets the interface.
@@ -659,6 +794,7 @@ namespace AssetPackage
             return base.getInterface<T>();
         }
 
+        /*
         /// <summary>
         /// Issue a HTTP Webrequest.
         /// </summary>
@@ -743,6 +879,7 @@ namespace AssetPackage
 
             return false;
         }
+        */
 
         public IEnumerator GetEnumerator()
         {

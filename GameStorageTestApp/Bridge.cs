@@ -15,6 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#define ASYNC
+
 namespace UserModel
 {
     using System;
@@ -29,7 +32,7 @@ namespace UserModel
 #endif
     using AssetPackage;
 
-    class Bridge : IBridge, IVirtualProperties, IDataStorage, IWebServiceRequest, IWebServiceRequest2, ILog
+    class Bridge : IBridge, IVirtualProperties, IDataStorage, /*IWebServiceRequest, */IWebServiceRequest2, ILog
     {
         readonly String StorageDir = String.Format(@".{0}DataStorage", Path.DirectorySeparatorChar);
 
@@ -127,145 +130,152 @@ namespace UserModel
         #endregion
 
         #region IWebServiceRequest Members
+        /*
 
-#if ASYNC
+ #if ASYNC
 
-        /// <summary>
-        /// Web service request.
-        /// </summary>
-        ///
-        /// <param name="method">           The method. </param>
-        /// <param name="uri">              URI of the document. </param>
-        /// <param name="headers">          The headers. </param>
-        /// <param name="body">             The body. </param>
-        /// <param name="notifyOnResponse"> The response. </param>
-        public async void WebServiceRequest(
-            string method,
-            Uri uri,
-            Dictionary<string, string> headers,
-            string body,
-            IWebServiceResponse notifyOnResponse)
-#else
-        /// <summary>
-        /// Web service request.
-        /// </summary>
-        ///
-        /// <param name="method">           The method. </param>
-        /// <param name="uri">              URI of the document. </param>
-        /// <param name="headers">          The headers. </param>
-        /// <param name="body">             The body. </param>
-        /// <param name="notifyOnResponse"> The response. </param>
-        public void WebServiceRequest(
-            string method,
-            Uri uri,
-            Dictionary<string, string> headers,
-            string body,
-            IWebServiceResponse notifyOnResponse)
-#endif
-        {
-            try
-            {
-                //! Create might throw a silent System.IOException on .NET 3.5 (sync).
-                // 
-                HttpWebRequest request = (HttpWebRequest)WebRequest.Create(uri);
+         /// <summary>
+         /// Web service request.
+         /// </summary>
+         ///
+         /// <param name="method">           The method. </param>
+         /// <param name="uri">              URI of the document. </param>
+         /// <param name="headers">          The headers. </param>
+         /// <param name="body">             The body. </param>
+         /// <param name="notifyOnResponse"> The response. </param>
+         public async void WebServiceRequest(
+             string method,
+             Uri uri,
+             Dictionary<string, string> headers,
+             string body,
+             IWebServiceResponse notifyOnResponse)
+ #else
+         /// <summary>
+         /// Web service request.
+         /// </summary>
+         ///
+         /// <param name="method">           The method. </param>
+         /// <param name="uri">              URI of the document. </param>
+         /// <param name="headers">          The headers. </param>
+         /// <param name="body">             The body. </param>
+         /// <param name="notifyOnResponse"> The response. </param>
+         public void WebServiceRequest(
+             string method,
+             Uri uri,
+             Dictionary<string, string> headers,
+             string body,
+             IWebServiceResponse notifyOnResponse)
+ #endif
+         {
+             try
+             {
+                 //! Create might throw a silent System.IOException on .NET 3.5 (sync).
+                 // 
+                 HttpWebRequest request = (HttpWebRequest)WebRequest.Create(uri);
 
-                request.Method = method;
+                 request.Method = method;
 
-                // TODO Cookies
-                // 
-                // Both Accept and Content-Type are not allowed as Headers in a HttpWebRequest.
-                // They need to be assigned to a matching property.
-                // 
-                if (headers.ContainsKey("Accept"))
-                {
-                    request.Accept = headers["Accept"];
-                    headers.Remove("Accept");
-                }
+                 // TODO Cookies
+                 // 
+                 // Both Accept and Content-Type are not allowed as Headers in a HttpWebRequest.
+                 // They need to be assigned to a matching property.
+                 // 
+                 if (headers.ContainsKey("Accept"))
+                 {
+                     request.Accept = headers["Accept"];
+                 }
 
-                if (!String.IsNullOrEmpty(body))
-                {
-                    byte[] data = Encoding.UTF8.GetBytes(body);
+                 if (!String.IsNullOrEmpty(body))
+                 {
+                     byte[] data = Encoding.UTF8.GetBytes(body);
 
-                    if (headers.ContainsKey("Content-Type"))
-                    {
-                        request.ContentType = headers["Content-Type"];
-                        headers.Remove("Content-Type");
-                    }
+                     if (headers.ContainsKey("Content-Type"))
+                     {
+                         request.ContentType = headers["Content-Type"];
+                     }
 
-                    foreach (KeyValuePair<string, string> kvp in headers)
-                    {
-                        request.Headers.Add(kvp.Key, kvp.Value);
-                    }
-
-                    request.ContentLength = data.Length;
-
-                    // See https://msdn.microsoft.com/en-us/library/system.net.servicepoint.expect100continue(v=vs.110).aspx
-                    // A2 currently does not support this 100-Continue response for POST requets.
-                    request.ServicePoint.Expect100Continue = false;
-
-#if ASYNC
-                    Stream stream = await request.GetRequestStreamAsync();
-                    await stream.WriteAsync(data, 0, data.Length);
-                    stream.Close();
-#else
-                    Stream stream = request.GetRequestStream();
-                    stream.Write(data, 0, data.Length);
-                    stream.Close();
-#endif
-                }
-                else
-                {
-                    foreach (KeyValuePair<string, string> kvp in headers)
-                    {
-                        request.Headers.Add(kvp.Key, kvp.Value);
-                    }
-                }
-
-#if ASYNC
-                WebResponse response = await request.GetResponseAsync();
-#else
-                WebResponse response = request.GetResponse();
-#endif
-                if (notifyOnResponse != null)
-                {
-                    Dictionary<string, string> responseHeaders = new Dictionary<string, string>();
-
-                    if (response.Headers.HasKeys())
-                    {
-                        foreach (string key in response.Headers.AllKeys)
+                     foreach (KeyValuePair<string, string> kvp in headers)
+                     {
+                        if (kvp.Key.Equals("Accept") || kvp.Key.Equals("Content-Type"))
                         {
-                            responseHeaders.Add(key, response.Headers.Get(key));
+                            continue;
                         }
-                    }
+                        request.Headers.Add(kvp.Key, kvp.Value);
+                     }
 
-                    int responseCode = (int)(response as HttpWebResponse).StatusCode;
-                    string responseBody = String.Empty;
+                     request.ContentLength = data.Length;
 
-                    using (StreamReader reader = new StreamReader(response.GetResponseStream()))
-                    {
-#if ASYNC
-                        responseBody = await reader.ReadToEndAsync();
-#else
-                        responseBody = reader.ReadToEnd();
-#endif
-                    }
+                     // See https://msdn.microsoft.com/en-us/library/system.net.servicepoint.expect100continue(v=vs.110).aspx
+                     // A2 currently does not support this 100-Continue response for POST requets.
+                     request.ServicePoint.Expect100Continue = false;
 
-                    notifyOnResponse.Success(uri.ToString(), responseCode, responseHeaders, responseBody);
-                }
-            }
-            catch (Exception e)
-            {
-                if (notifyOnResponse != null)
-                {
-                    notifyOnResponse.Error(uri.ToString(), e.Message);
-                }
-                else
-                {
-                    Log(Severity.Error, String.Format("{0} - {1}", e.GetType().Name, e.Message));
-                }
-            }
-        }
+ #if ASYNC
+                     Stream stream = await request.GetRequestStreamAsync();
+                     await stream.WriteAsync(data, 0, data.Length);
+                     stream.Close();
+ #else
+                     Stream stream = request.GetRequestStream();
+                     stream.Write(data, 0, data.Length);
+                     stream.Close();
+ #endif
+                 }
+                 else
+                 {
+                     foreach (KeyValuePair<string, string> kvp in headers)
+                     {
+                        if (kvp.Key.Equals("Accept") || kvp.Key.Equals("Content-Type"))
+                        {
+                            continue;
+                        }
+                         request.Headers.Add(kvp.Key, kvp.Value);
+                     }
+                 }
 
+ #if ASYNC
+                 WebResponse response = await request.GetResponseAsync();
+ #else
+                 WebResponse response = request.GetResponse();
+ #endif
+                 if (notifyOnResponse != null)
+                 {
+                     Dictionary<string, string> responseHeaders = new Dictionary<string, string>();
+
+                     if (response.Headers.HasKeys())
+                     {
+                         foreach (string key in response.Headers.AllKeys)
+                         {
+                            responseHeaders.Add(key, response.Headers.Get(key));
+                         }
+                     }
+
+                     int responseCode = (int)(response as HttpWebResponse).StatusCode;
+                     string responseBody = String.Empty;
+
+                     using (StreamReader reader = new StreamReader(response.GetResponseStream()))
+                     {
+ #if ASYNC
+                         responseBody = await reader.ReadToEndAsync();
+ #else
+                         responseBody = reader.ReadToEnd();
+ #endif
+                     }
+
+                     notifyOnResponse.Success(uri.ToString(), responseCode, responseHeaders, responseBody);
+                 }
+             }
+             catch (Exception e)
+             {
+                 if (notifyOnResponse != null)
+                 {
+                     notifyOnResponse.Error(uri.ToString(), e.Message);
+                 }
+                 else
+                 {
+                     Log(Severity.Error, String.Format("{0} - {1}", e.GetType().Name, e.Message));
+                 }
+             }
+         }
+ */
         #endregion IWebServiceRequest Members
 
         #region ILog Members
@@ -286,7 +296,8 @@ namespace UserModel
                 {
                     Debug.WriteLine("");
                 }
-                else {
+                else
+                {
                     Debug.WriteLine(String.Format("{0}: {1}", severity, msg));
                 }
             }
