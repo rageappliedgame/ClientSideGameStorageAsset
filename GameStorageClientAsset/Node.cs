@@ -54,7 +54,8 @@ namespace AssetPackage
     // TODO Test performance without generic parameter & casting.
     //
     // TODO Extend Json Serialization (now a flat array of path/(xml)value).
-    // 
+    //      Define a interface IJson for this?
+    //
     // ISSUE When doing ToXml() the code seems to be using some kind of copy as Purpose and Owner are no longer set.
     //       This gives issues with the Value property.
     // ISSUE Supplying data during tree construction to Nodes with a StorageLocation Game (or inherited) is possible but illegal.
