@@ -1141,7 +1141,7 @@ namespace AssetPackage
         ///                         to which the object is serialized. </param>
         public void WriteXml(XmlWriter writer)
         {
-            Debug.Print(this.Name);
+            //Debug.Print(this.Name);
 
             //! 1) Add name as an attribute to <node>.
             // 
