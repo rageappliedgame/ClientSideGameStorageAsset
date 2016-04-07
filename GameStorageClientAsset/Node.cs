@@ -123,10 +123,8 @@ namespace AssetPackage
 
     [XmlRoot("node")]
     [Serializable]
-    //[SecurityPermission(SecurityAction.Demand, SerializationFormatter = true)]
     [DebuggerDisplay("Name={Name}, Path={Path}, Count={Count}")]
-    public class Node : /*IEnumerable,*/ IEqualityComparer, IXmlSerializable, ISerializable
-    /*, IDisposable*/
+    public class Node : IEqualityComparer, IXmlSerializable, ISerializable
     {
         #region Fields
 
@@ -174,8 +172,7 @@ namespace AssetPackage
         public String Purpose
         {
             get;
-            /*private*/
-            set;
+            private set;
         }
 
         #endregion Fields
@@ -983,65 +980,6 @@ namespace AssetPackage
         }
 
         /// <summary>
-        /// Build Node list based on Prot fix enumeration.
-        /// </summary>
-        ///
-        /// <param name="currentNode"> The current node. </param>
-        /// <param name="result">      The result. </param>
-        ///
-        /// <returns>
-        /// A List&lt;Node&lt;T&gt;&gt;
-        /// </returns>
-        private List<Node> PostFixChildrenOf(Node currentNode, List<Node> result, List<StorageLocations> filter)
-        {
-            if (currentNode.children != null)
-            {
-                foreach (Node child in currentNode.Children)
-                {
-                    if (child.Count != 0)
-                    {
-                        PostFixChildrenOf(child, result, filter);
-                    }
-
-                    if (filter.Count == 0 || filter.Contains(child.StorageLocation))
-                    {
-                        result.Add(child);
-                    }
-                }
-            }
-            return result;
-        }
-
-        ///// <summary>
-        ///// Build Node list based on Pre fix enumeration.
-        ///// </summary>
-        /////
-        ///// <param name="currentNode"> The current node. </param>
-        ///// <param name="result">      The result. </param>
-        ///// <param name="filter">      Specifies the filter. </param>
-        /////
-        ///// <returns>
-        ///// A List&lt;Node&lt;T&gt;&gt;
-        ///// </returns>
-        //private List<Node> PreFixChildrenOf(Node currentNode, List<Node> result, List<StorageLocations> filter)
-        //{
-        //    foreach (Node child in currentNode.Children)
-        //    {
-        //        if (child.Count != 0)
-        //        {
-        //            PreFixChildrenOf(child, result, filter);
-        //        }
-
-        //        if (filter.Count == 0 || filter.Contains(child.StorageLocation))
-        //        {
-        //            result.Add(child);
-        //        }
-        //    }
-
-        //    return result;
-        //}
-
-        /// <summary>
         /// This method is reserved and should not be used. When implementing the
         /// IXmlSerializable interface, you should return null (Nothing in Visual
         /// Basic) from this method, and instead, if specifying a custom schema is
@@ -1434,131 +1372,7 @@ namespace AssetPackage
             }
         }
 
-        /*
-        /// <summary>
-        /// Flag: Has Dispose already been called?
-        /// See https://msdn.microsoft.com/en-us/library/fs2xkftw(v=vs.110).aspx
-        /// </summary>
-        private bool disposed = false;
-
-        /// <summary>
-        /// Performs application-defined tasks associated with freeing, releasing, or
-        /// resetting unmanaged resources.
-        /// 
-        /// See https://msdn.microsoft.com/en-us/library/fs2xkftw(v=vs.110).aspx
-        /// </summary>
-        public void Dispose()
-        {
-            // Dispose of unmanaged resources.
-            Dispose(true);
-
-            // Suppress finalization.
-            GC.SuppressFinalize(this);
-        }
-
-        /// <summary>
-        /// Performs application-defined tasks associated with freeing, releasing, or
-        /// resetting unmanaged resources.
-        /// 
-        /// See https://msdn.microsoft.com/en-us/library/fs2xkftw(v=vs.110).aspx.
-        /// </summary>
-        ///
-        /// <param name="disposing">    true to release both managed and unmanaged
-        ///                             resources; false to release only unmanaged
-        ///                             resources. </param>
-        private void Dispose(bool disposing)
-        {
-            if (disposed)
-                return;
-
-            if (disposing)
-            {
-                // Free any other managed objects here.
-                if (children != null)
-                {
-                    children.Clear();
-                    children = null;
-                }
-            }
-            // Free any unmanaged objects here.
-            //
-            disposed = true;
-        }
-        */
-        /*
-        /// <summary>
-        /// Converts this object to a JSON.
-        /// </summary>
-        ///
-        /// <returns>
-        /// This object as a string.
-        /// </returns>
-        public string ToJson(List<StorageLocations> locations)
-        {
-            StringBuilder json = new StringBuilder();
-
-            // Open array.
-            json.AppendLine("[");
-
-            foreach (Node node in this.PrefixEnumerator(locations))
-            {
-                if (node.Value != null)
-                {
-                    // Append 'path': 'value',
-                    json.AppendLine(node.ToJsonValue());
-                }
-            }
-
-            // Trim trailing ','.
-            Int32 ndx = json.ToString().LastIndexOf(",");
-            json.Length = ndx;
-
-            // Close array.
-            json.AppendLine();
-            json.AppendLine("]");
-
-            return json.ToString();
-        }
-
-        /// <summary>
-        /// Converts this object to a JSON value.
-        /// </summary>
-        ///
-        /// <returns>
-        /// This object as a String.
-        /// </returns>
-        public String ToJsonValue()
-        {
-            Type type = value.GetType();
-            if (type.IsPrimitive)
-            {
-                // This is to simple for List<T> and Array[]
-                return String.Format("\"{0}\" : {1},", Path, Value);
-            }
-            else if (value is DateTime)
-            {
-                return String.Format("\"{0}\" : \"{1}\",", Path, ((DateTime)Value).ToString("O"));
-            }
-            else if (value is String)
-            {
-                return String.Format("\"{0}\" : \"{1}\",", Path, Value);
-            }
-            else if (type.IsGenericType)
-            {
-                //foreach (object obj in (Array)value)
-                //{
-                //    Debug.WriteLine(obj);
-                //}
-            }
-
-            //ValueType for primitive types, dattime and structs (but not classes).
-            // 
-            return String.Format("\"{0}\" : \"{1}\",", Path, Value);
-        }
-        */
-
         #endregion Methods
-
 
         public class NodeXmlWriter : XmlTextWriter
         {
