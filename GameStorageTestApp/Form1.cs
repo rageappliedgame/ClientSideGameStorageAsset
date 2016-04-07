@@ -20,8 +20,8 @@ namespace UserModel
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Drawing;
-    using System.Threading.Tasks;
+    using System.Linq;
+    using System.Text.RegularExpressions;
     using System.Windows.Forms;
 
     using AssetPackage;
@@ -88,7 +88,7 @@ namespace UserModel
             Node B = F.AddChild("B", "B");
             B.AddChild("A", "A");
             B.Value = data;
-            Node D = B.AddChild("D", DateTime.Now);
+            Node D = B.AddChild("D", DateTime.Now, StorageLocations.Server);
             D.AddChild("C", new DemoStruct
             {
                 a = 15,
@@ -166,7 +166,12 @@ namespace UserModel
             // Type t = Type.GetType("System.Collections.Generic.Dictionary`2[System.String,System.Object]");
 
             // 0) Complete payload.
-            storage["User"].AddChild("STRUCT", "Bla");
+            storage["User"].AddChild("STRUCT", new DemoStruct
+            {
+                a = 10,
+                b = "elf",
+                c = new DateTime(12)
+            });
 
             // 1) Game based, not saved to server, retrieved on access.
             //
@@ -291,7 +296,7 @@ namespace UserModel
                 Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
             }
 
-            textBox2.Text += storage["Wiki"].ToJson(new List<StorageLocations>() { StorageLocations.Local });
+            //textBox2.Text += storage["Wiki"].ToJson(StorageLocations.Local);
 
             foreach (Node node in storage["Wiki"].PrefixEnumerator())
             {
@@ -339,7 +344,7 @@ namespace UserModel
             Debug.Print(storage["Test"].Purpose);
         }
 
-        private async void button6_Click(object sender, EventArgs e)
+        private /*async*/ void button6_Click(object sender, EventArgs e)
         {
             if (storage.CheckHealth())
             {
@@ -520,5 +525,90 @@ namespace UserModel
 
         #endregion Nested Types
 
+        private void button8_Click(object sender, EventArgs e)
+        {
+            BuildDemo();
+
+            //Debug.Print(storage.SerializeData("Wiki", StorageLocations.Local, SerializingFormat.Json));
+            Debug.Print(storage.SerializeData("Wiki", StorageLocations.Server, SerializingFormat.Json));
+        }
+
+        private void button9_Click(object sender, EventArgs e)
+        {
+            BuildDemo();
+
+            Debug.WriteLine("PostFix");
+
+            foreach (Node node in storage["Wiki"].PostfixEnumerator())
+            {
+                Debug.Write(node.Name + " ");
+            }
+            Debug.WriteLine(String.Empty);
+
+            foreach (StorageLocations loc in Enum.GetValues(typeof(StorageLocations)))
+            {
+                Debug.WriteLine(String.Format("{0}-", loc.ToString()));
+                foreach (Node node in storage["Wiki"].PostfixEnumerator(new List<StorageLocations> { loc }))
+                {
+                    Debug.Write(node.Name + " ");
+                }
+                Debug.WriteLine(String.Empty);
+            }
+
+            Debug.WriteLine("PreFix");
+
+            foreach (Node node in storage["Wiki"].PrefixEnumerator())
+            {
+                Debug.Write(node.Name + " ");
+            }
+            Debug.WriteLine(String.Empty);
+
+            foreach (StorageLocations loc in Enum.GetValues(typeof(StorageLocations)))
+            {
+                Debug.WriteLine(String.Format("{0}-", loc.ToString()));
+                foreach (Node node in storage["Wiki"].PrefixEnumerator(new List<StorageLocations> { loc }))
+                {
+                    Debug.Write(node.Name + " ");
+                }
+                Debug.WriteLine(String.Empty);
+            }
+            Debug.WriteLine(String.Empty);
+
+            //List<int> x = new List<int>();
+            //x.Add(10);
+            //x.Add(11);
+            //x.Add(12);
+
+            ////List`1
+            //Debug.Print(ResolveType(x.GetType()));
+            //Debug.Print(ResolveType(typeof(Dictionary<String, Int32>)));
+
+            //Debug.WriteLine(JsonConvert.SerializeObject(storage["Wiki"]["F"]["B"], Formatting.Indented));
+        }
+
+        /// <summary>
+        /// The Regex to match the generic name so `nn suffix can be replaces by &lt;
+        /// &gt; brackets paramaters. Only the `nn will actually be a match group.
+        /// </summary>
+        private static Regex gargs = new Regex(@"(?:.+)(`(?:\d+))(?:.?)");
+
+        private static String ResolveType(Type t)
+        {
+            String cls = t.Name;
+
+            if (t.IsGenericType)
+            {
+                //Match m = gargs.Match(cls);
+                //if (m.Groups.Count == 2)
+                //{
+                //    cls = cls.Remove(m.Groups[1].Index, m.Groups[1].Length);
+                //    cls = cls.Insert(m.Groups[1].Index, String.Format("<{0}>", String.Join(",", t.GenericTypeArguments.Select(p => p.Name))));
+                //}
+
+                cls = t.GetGenericTypeDefinition().Name;
+            }
+
+            return cls;
+        }
     }
 }

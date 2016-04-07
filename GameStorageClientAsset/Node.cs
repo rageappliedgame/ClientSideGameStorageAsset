@@ -22,6 +22,7 @@ namespace AssetPackage
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
+    using System.Linq;
     using System.Runtime.Serialization;
     using System.Runtime.Serialization.Formatters.Binary;
     using System.Text;
@@ -124,7 +125,7 @@ namespace AssetPackage
     [Serializable]
     //[SecurityPermission(SecurityAction.Demand, SerializationFormatter = true)]
     [DebuggerDisplay("Name={Name}, Path={Path}, Count={Count}")]
-    public class Node : IEnumerable, IEqualityComparer, IXmlSerializable, ISerializable
+    public class Node : /*IEnumerable,*/ IEqualityComparer, IXmlSerializable, ISerializable
     /*, IDisposable*/
     {
         #region Fields
@@ -196,7 +197,6 @@ namespace AssetPackage
             //Caching Serializer for List`1
             //Caching Serializer for String[]
             //Elapsed: 689 ms
-
 
             Stopwatch sw = new Stopwatch();
 
@@ -304,7 +304,7 @@ namespace AssetPackage
         /// </summary>
         private Node()
         {
-            //
+            children = new List<Node>();
         }
 
         /// <summary>
@@ -371,7 +371,7 @@ namespace AssetPackage
         /// <param name="Name">            The name. </param>
         /// <param name="Value">           The value. </param>
         /// <param name="StorageLocation"> The storage location. </param>
-        public Node(Node Parent, String Name, Object Value, StorageLocations StorageLocation)
+        public Node(Node Parent, String Name, Object Value, StorageLocations StorageLocation) : this()
         {
             this.Parent = Parent;
             this.Name = Name;
@@ -452,6 +452,11 @@ namespace AssetPackage
             get
             {
                 return children;
+            }
+            set
+            {
+#warning Added for testing newtonsoft
+                children = value;
             }
         }
 
@@ -813,10 +818,17 @@ namespace AssetPackage
         /// An <see cref="T:System.Collections.IEnumerator" /> object that can be
         /// used to iterate through the collection.
         /// </returns>
-        public IEnumerator GetEnumerator()
-        {
-            return children.GetEnumerator();
-        }
+        //public IEnumerator GetEnumerator()
+        //{
+        //    if (children != null)
+        //    {
+        //        return children.GetEnumerator();
+        //    }
+        //    else
+        //    {
+        //        return new object[0].GetEnumerator();
+        //    }
+        //}
 
         /// <summary>
         /// Returns a hash code for the specified object.
@@ -859,7 +871,20 @@ namespace AssetPackage
         /// </returns>
         public IEnumerable<Node> PostfixEnumerator()
         {
-            return PostfixEnumerator(new List<StorageLocations>());
+            //return PostfixEnumerator(new List<StorageLocations>());
+
+            for (int i = 0; i < Count; i++)
+            {
+                foreach (Node child in this[i].PostfixEnumerator())
+                {
+                    yield return child;
+                }
+            }
+
+            if (!IsRoot)
+            {
+                yield return this;
+            }
         }
 
         /// <summary>
@@ -875,21 +900,44 @@ namespace AssetPackage
         /// </returns>
         public IEnumerable<Node> PostfixEnumerator(List<StorageLocations> filter)
         {
-            return (IEnumerable<Node>)PostFixChildrenOf(this, new List<Node>(), filter);
+            foreach (Node node in PostfixEnumerator())
+            {
+                //! veg: skip root item?
+                // 
+                if (!node.IsRoot && (filter.Count == 0 || filter.Contains(node.StorageLocation)))
+                {
+                    yield return node;
+                }
+            }
         }
 
         /// <summary>
-        /// Returns a prefix enumerator (depth-first) in this tree.
-        /// It visits 'nodes' before 'leaves'.
+        /// Returns a prefix enumerator (depth-first) in this tree. It visits 'nodes'
+        /// before 'leaves'.
         /// </summary>
+        ///
+        /// <remarks>
+        /// this enumerator allows building &amp; filling the structure.
+        /// </remarks>
         ///
         /// <returns>
         /// An enumerator that allows foreach to be used to process prefix enumerator
-        /// in this tree.
+        /// in this collection.
         /// </returns>
         public IEnumerable<Node> PrefixEnumerator()
         {
-            return PrefixEnumerator(new List<StorageLocations>());
+            if (!IsRoot)
+            {
+                yield return this;
+            }
+
+            for (int i = 0; i < Count; i++)
+            {
+                foreach (Node child in this[i].PrefixEnumerator())
+                {
+                    yield return child;
+                }
+            }
         }
 
         /// <summary>
@@ -909,21 +957,13 @@ namespace AssetPackage
         /// </returns>
         public IEnumerable<Node> PrefixEnumerator(List<StorageLocations> filter)
         {
-            //! veg: skip root item?
-            //
-            if (!IsRoot && (filter.Count == 0 || filter.Contains(StorageLocation)))
+            foreach (Node node in PrefixEnumerator())
             {
-                yield return this;
-            }
-
-            for (int i = 0; i < Count; i++)
-            {
-                foreach (Node child in this[i].PrefixEnumerator())
+                //! veg: skip root item?
+                // 
+                if (!node.IsRoot && (filter.Count == 0 || filter.Contains(node.StorageLocation)))
                 {
-                    if (filter.Count == 0 || filter.Contains(StorageLocation))
-                    {
-                        yield return child;
-                    }
+                    yield return node;
                 }
             }
         }
@@ -972,34 +1012,34 @@ namespace AssetPackage
             return result;
         }
 
-        /// <summary>
-        /// Build Node list based on Pre fix enumeration.
-        /// </summary>
-        ///
-        /// <param name="currentNode"> The current node. </param>
-        /// <param name="result">      The result. </param>
-        /// <param name="filter">      Specifies the filter. </param>
-        ///
-        /// <returns>
-        /// A List&lt;Node&lt;T&gt;&gt;
-        /// </returns>
-        private List<Node> PreFixChildrenOf(Node currentNode, List<Node> result, List<StorageLocations> filter)
-        {
-            foreach (Node child in currentNode.Children)
-            {
-                if (child.Count != 0)
-                {
-                    PreFixChildrenOf(child, result, filter);
-                }
+        ///// <summary>
+        ///// Build Node list based on Pre fix enumeration.
+        ///// </summary>
+        /////
+        ///// <param name="currentNode"> The current node. </param>
+        ///// <param name="result">      The result. </param>
+        ///// <param name="filter">      Specifies the filter. </param>
+        /////
+        ///// <returns>
+        ///// A List&lt;Node&lt;T&gt;&gt;
+        ///// </returns>
+        //private List<Node> PreFixChildrenOf(Node currentNode, List<Node> result, List<StorageLocations> filter)
+        //{
+        //    foreach (Node child in currentNode.Children)
+        //    {
+        //        if (child.Count != 0)
+        //        {
+        //            PreFixChildrenOf(child, result, filter);
+        //        }
 
-                if (filter.Count == 0 || filter.Contains(child.StorageLocation))
-                {
-                    result.Add(child);
-                }
-            }
+        //        if (filter.Count == 0 || filter.Contains(child.StorageLocation))
+        //        {
+        //            result.Add(child);
+        //        }
+        //    }
 
-            return result;
-        }
+        //    return result;
+        //}
 
         /// <summary>
         /// This method is reserved and should not be used. When implementing the
@@ -1445,7 +1485,7 @@ namespace AssetPackage
             disposed = true;
         }
         */
-
+        /*
         /// <summary>
         /// Converts this object to a JSON.
         /// </summary>
@@ -1489,16 +1529,33 @@ namespace AssetPackage
         /// </returns>
         public String ToJsonValue()
         {
-            if (value.GetType().IsPrimitive)
+            Type type = value.GetType();
+            if (type.IsPrimitive)
             {
+                // This is to simple for List<T> and Array[]
                 return String.Format("\"{0}\" : {1},", Path, Value);
             }
             else if (value is DateTime)
             {
                 return String.Format("\"{0}\" : \"{1}\",", Path, ((DateTime)Value).ToString("O"));
             }
+            else if (value is String)
+            {
+                return String.Format("\"{0}\" : \"{1}\",", Path, Value);
+            }
+            else if (type.IsGenericType)
+            {
+                //foreach (object obj in (Array)value)
+                //{
+                //    Debug.WriteLine(obj);
+                //}
+            }
+
+            //ValueType for primitive types, dattime and structs (but not classes).
+            // 
             return String.Format("\"{0}\" : \"{1}\",", Path, Value);
         }
+        */
 
         #endregion Methods
 

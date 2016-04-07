@@ -22,8 +22,8 @@ namespace AssetPackage
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
+    using System.Text;
     using System.Text.RegularExpressions;
-    using System.Xml.Serialization;
 
     //! Not sure if this needs to stay here. Better is using Dictionary of Models instead of nesting them.
     //! Make Models keys case-insesitive?
@@ -80,6 +80,10 @@ namespace AssetPackage
         /// </summary>
         private GameStorageClientAssetSettings settings = null;
 
+        private Dictionary<SerializingFormat, String> prefixes = new Dictionary<SerializingFormat, string>();
+        private Dictionary<SerializingFormat, String> separators = new Dictionary<SerializingFormat, string>();
+        private Dictionary<SerializingFormat, String> suffixes = new Dictionary<SerializingFormat, string>();
+
         #endregion Fields
 
         #region Constructors
@@ -91,6 +95,14 @@ namespace AssetPackage
             : base()
         {
             settings = new GameStorageClientAssetSettings();
+
+            prefixes.Add(SerializingFormat.Json, "[");
+            prefixes.Add(SerializingFormat.Xml, "<Nodes>");
+
+            separators.Add(SerializingFormat.Json, ",");
+
+            suffixes.Add(SerializingFormat.Json, "]");
+            suffixes.Add(SerializingFormat.Xml, "</Nodes>");
 
             if (LoadSettings(SettingsFileName))
             {
@@ -445,7 +457,7 @@ namespace AssetPackage
                             {
                                 if (jsonStructure.IsMatch(response.body))
                                 {
-                                   String base64 = jsonStructure.Match(response.body).Groups[1].Value;
+                                    String base64 = jsonStructure.Match(response.body).Groups[1].Value;
 
                                     this[model].FromBinary(base64, true);
 
@@ -525,37 +537,204 @@ namespace AssetPackage
             return Connected;
         }
 
-        public void SaveData(String model, StorageLocations location)
+        /// <summary>
+        /// Saves a data.
+        /// </summary>
+        ///
+        /// <param name="model">    The model. </param>
+        /// <param name="location"> The location. </param>
+        /// <param name="format">   Describes the format to use. </param>
+        public void SaveData(String model, StorageLocations location, SerializingFormat format)
         {
             if (Models.ContainsKey(model))
             {
-                switch (location)
+                ISerializer serializer = getInterface<ISerializer>();
+
+                if (serializer != null && serializer.Supports(format))
                 {
-                    case StorageLocations.Local:
-                        IDataStorage storage = getInterface<IDataStorage>();
+                    switch (location)
+                    {
+                        case StorageLocations.Local:
+                            {
+                                IDataStorage storage = getInterface<IDataStorage>();
 
-                        if (storage != null)
-                        {
-                            storage.Save(model + ".json", Models[model].ToJson(new List<StorageLocations> { location }));
-                        }
-                        else
-                        {
-                            Debug.Print("IDataStorage interface not found a Bridge");
-                        }
-                        break;
+                                if (storage != null)
+                                {
+                                    storage.Save(model + ".json", SerializeData(model, location, format));
+                                }
+                                else
+                                {
+                                    Debug.Print("IDataStorage interface not found a Bridge");
+                                }
+                            }
+                            break;
 
-                    case StorageLocations.Server:
-                    //IssueRequest("proxy/gleaner/collector/track", "POST", headers, data);
+                        case StorageLocations.Server:
+                            {
+                                Dictionary<string, string> headers = new Dictionary<string, string>();
 
-                    default:
-                        Debug.Print("Not implemented yet");
-                        break;
+                                headers.Add("Content-Type", "application/json");
+                                headers.Add("Accept", "application/json");
+
+                                IssueRequest2(
+                                    String.Format("storage/data/{0}", model),
+                                    "POST",
+                                    headers,
+                                    SerializeData(model, location, format));
+                            }
+                            break;
+
+                        default:
+                            Debug.Print("Not implemented yet");
+                            break;
+                    }
+                }
+                else
+                {
+                    Debug.Print(String.Format("ISerializer interface for {0} not found a Bridge", format));
                 }
             }
             else
             {
                 Debug.Print("Model not found");
             }
+        }
+
+        /// <summary>
+        /// Serialize data.
+        /// </summary>
+        ///
+        /// <param name="model">    The model. </param>
+        /// <param name="location"> The location. </param>
+        /// <param name="format">   Describes the format to use. </param>
+        ///
+        /// <returns>
+        /// A String.
+        /// </returns>
+        public String SerializeData(String model, StorageLocations location, SerializingFormat format)
+        {
+            if (Models.ContainsKey(model))
+            {
+                ISerializer serializer = getInterface<ISerializer>();
+
+                if (serializer != null && serializer.Supports(format))
+                {
+                    return Serialize(serializer, Models[model], location, format);
+                }
+                else
+                {
+                    Debug.Print(String.Format("ISerializer interface for {0} not found a Bridge", format));
+                }
+            }
+            else
+            {
+                Debug.Print("Model not found");
+            }
+
+            return String.Empty;
+        }
+
+        /*
+        /// <summary>
+        /// The Regex to match the generic name so `nn suffix can be replaces by &lt;
+        /// &gt; brackets paramaters. Only the `nn will actually be a match group.
+        /// </summary>
+        private static Regex gargs = new Regex(@"(?:.+)(`(?:\d+))(?:.?)");
+
+        /// <summary>
+        /// Resolve type.
+        /// </summary>
+        ///
+        /// <param name="t"> The Type to process. </param>
+        ///
+        /// <returns>
+        /// A String.
+        /// </returns>
+        private static String ResolveType(Type t)
+        {
+            String cls = t.Name;
+
+            if (t.IsGenericType)
+            {
+                cls = t.GetGenericTypeDefinition().Name;
+                Match m = gargs.Match(cls);
+                if (m.Groups.Count == 2)
+                {
+                    //cls = cls.Remove(m.Groups[1].Index, m.Groups[1].Length);
+                    //cls = cls.Insert(m.Groups[1].Index, String.Format("<{0}>", String.Join(",", t.GetGenericTypeDefinition().Select(p => p.Name))));
+                }
+            }
+
+            return cls;
+        }
+        */
+
+        /// <summary>
+        /// Serialize this object to the given stream.
+        /// </summary>
+        ///
+        /// <param name="serializer"> The serializer. </param>
+        /// <param name="root">       The root. </param>
+        /// <param name="location">   The location. </param>
+        /// <param name="format">     Describes the format to use. </param>
+        ///
+        /// <returns>
+        /// A String.
+        /// </returns>
+        private String Serialize(ISerializer serializer, Node root, StorageLocations location, SerializingFormat format)
+        {
+            StringBuilder serialized = new StringBuilder();
+
+            //! Open array.
+            if (prefixes.ContainsKey(format))
+            {
+                serialized.AppendLine(prefixes[format]);
+            }
+            NodeValue nodeValue = new NodeValue();
+
+            foreach (Node node in root.PrefixEnumerator(new List<StorageLocations> { location }))
+            {
+                //if (node.StorageLocation == location && node.Value != null)
+                //{
+                nodeValue.Path = node.Path;
+                nodeValue.Value = node.Value;
+                nodeValue.ValueType = node.Value.GetType().Name;
+
+#warning TODO Fixup Generic Parameters (and see how to deserialize property (using Type.FromName()).
+
+                //! Write value.
+                serialized.Append(serializer.Serialize(nodeValue, format));
+
+                //! Write separator if any.
+                if (separators.ContainsKey(format))
+                {
+                    serialized.AppendLine(separators[format]);
+                }
+                else
+                {
+                    serialized.AppendLine(String.Empty);
+                }
+                //}
+            }
+
+            //! Json Fixup: Trim trailing ','.
+            if (format == SerializingFormat.Json && separators.ContainsKey(format))
+            {
+                Int32 ndx = serialized.ToString().LastIndexOf(separators[format]);
+                if (ndx != -1)
+                {
+                    serialized.Length = ndx;
+                    serialized.AppendLine(String.Empty);
+                }
+            }
+
+            //! Close array.
+            if (suffixes.ContainsKey(format))
+            {
+                serialized.AppendLine(suffixes[format]);
+            }
+
+            return serialized.ToString();
         }
 
         /// <summary>
