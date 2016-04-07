@@ -48,8 +48,10 @@
   <ItemGroup>
     <Compile Include="GameStorageClientAsset.cs" />
     <Compile Include="GameStorageClientAssetSettings.cs" />
+    <Compile Include="ISerializer.cs" />
     <Compile Include="IVirtualProperties.cs" />
     <Compile Include="Node.cs" />
+    <Compile Include="NodeValue.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>

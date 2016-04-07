@@ -167,7 +167,7 @@
             Node child2 = root.AddChild("Property5", 43);
             Node child3 = child1.AddChild("SubProperty6", 43);
 
-            foreach (Node child in root)
+            foreach (Node child in root.Children)
             {
                 DumpNode(child);
             }

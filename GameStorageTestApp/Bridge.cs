@@ -16,7 +16,8 @@
  * limitations under the License.
  */
 
-#define ASYNC
+ #undef ASYNC
+//#define ASYNC
 
 namespace UserModel
 {
@@ -30,9 +31,10 @@ namespace UserModel
 #if ASYNC
     using System.Threading.Tasks;
 #endif
+    using Newtonsoft;
     using AssetPackage;
-
-    class Bridge : IBridge, IVirtualProperties, IDataStorage, /*IWebServiceRequest, */IWebServiceRequest2, ILog
+    using Newtonsoft.Json;
+    class Bridge : IBridge, IVirtualProperties, IDataStorage, /*IWebServiceRequest, */IWebServiceRequest2, ILog, ISerializer
     {
         readonly String StorageDir = String.Format(@".{0}DataStorage", Path.DirectorySeparatorChar);
 
@@ -484,5 +486,66 @@ namespace UserModel
         }
 
         #endregion IWebServiceRequest2 Members
+
+        #region ISerializer Members
+
+        /// <summary>
+        /// Supports the given format.
+        /// </summary>
+        ///
+        /// <param name="format"> Describes the format to use. </param>
+        ///
+        /// <returns>
+        /// true if it succeeds, false if it fails.
+        /// </returns>
+        public bool Supports(SerializingFormat format)
+        {
+            switch (format)
+            {
+                case SerializingFormat.Binary:
+                    return false;
+                case SerializingFormat.Xml:
+                    return false;
+                case SerializingFormat.Json:
+                    return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Deserialize this object to the given textual representation and format.
+        /// </summary>
+        ///
+        /// <param name="text">   The text to deserialize. </param>
+        /// <param name="type">   The type to deserialize. </param>
+        /// <param name="format"> Describes the format to use. </param>
+        ///
+        /// <returns>
+        /// An object.
+        /// </returns>
+        public object Deserialize(string text, Type type, SerializingFormat format)
+        {
+            return JsonConvert.DeserializeObject(text, type);
+        }
+
+        /// <summary>
+        /// Serialize this object to the given textual representation and format.
+        /// </summary>
+        ///
+        /// <param name="obj">    The object to serialize. </param>
+        /// <param name="format"> Describes the format to use. </param>
+        ///
+        /// <returns>
+        /// A string.
+        /// </returns>
+        public string Serialize(object obj, SerializingFormat format)
+        {
+            return JsonConvert.SerializeObject(obj, Formatting.Indented);
+        }
+
+        #endregion ISerializer Members
+
+
     }
 }
