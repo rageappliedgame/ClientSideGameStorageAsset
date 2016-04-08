@@ -274,37 +274,37 @@ namespace UserModel
 
         private void button4_Click(object sender, EventArgs e)
         {
-            textBox1.Clear();
-            textBox2.Clear();
+            //textBox1.Clear();
+            //textBox2.Clear();
 
-            WikiExampleTree(storage["Wiki"]);
+            //WikiExampleTree(storage["Wiki"]);
 
-            Stopwatch sw = new Stopwatch();
-            {
-                sw.Reset();
-                sw.Start();
+            //Stopwatch sw = new Stopwatch();
+            //{
+            //    sw.Reset();
+            //    sw.Start();
 
-                foreach (Node node in storage["Wiki"].PrefixEnumerator())
-                {
-                    if (node.Value != null)
-                    {
-                        string xml = node.ToXmlValue();
-                    }
-                }
+            //    foreach (Node node in storage["Wiki"].PrefixEnumerator())
+            //    {
+            //        if (node.Value != null)
+            //        {
+            //            string xml = node.ToXmlValue();
+            //        }
+            //    }
 
-                sw.Stop();
-                Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
-            }
+            //    sw.Stop();
+            //    Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
+            //}
 
-            //textBox2.Text += storage["Wiki"].ToJson(StorageLocations.Local);
+            ////textBox2.Text += storage["Wiki"].ToJson(StorageLocations.Local);
 
-            foreach (Node node in storage["Wiki"].PrefixEnumerator())
-            {
-                if (node.Value != null)
-                {
-                    textBox1.AppendText(String.Format("{0}\r\n{1}\r\n\r\n", node.Path, node.ToXmlValue()));
-                }
-            }
+            //foreach (Node node in storage["Wiki"].PrefixEnumerator())
+            //{
+            //    if (node.Value != null)
+            //    {
+            //        textBox1.AppendText(String.Format("{0}\r\n{1}\r\n\r\n", node.Path, node.ToXmlValue()));
+            //    }
+            //}
         }
 
         private void button5_Click(object sender, EventArgs e)
@@ -326,6 +326,8 @@ namespace UserModel
 
                 Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
             }
+
+            Debug.Print(base64);
 
             storage["Test"].Clear();
             {
@@ -530,14 +532,18 @@ namespace UserModel
             BuildDemo();
 
             //Debug.Print(storage.SerializeData("Wiki", StorageLocations.Local, SerializingFormat.Json));
-            Debug.Print(storage.SerializeData("Wiki", StorageLocations.Server, SerializingFormat.Json));
+            //Debug.Print(storage.SerializeData("Wiki", StorageLocations.Server, SerializingFormat.Json));
+            storage.SaveData("Wiki", StorageLocations.Server, SerializingFormat.Json);
         }
 
         private void button9_Click(object sender, EventArgs e)
         {
             BuildDemo();
 
+            Debug.WriteLine("Modified Wiki Example Tree Traversal and Filtering");
+
             Debug.WriteLine("PostFix");
+            Debug.WriteLine("-------");
 
             foreach (Node node in storage["Wiki"].PostfixEnumerator())
             {
@@ -547,7 +553,7 @@ namespace UserModel
 
             foreach (StorageLocations loc in Enum.GetValues(typeof(StorageLocations)))
             {
-                Debug.WriteLine(String.Format("{0}-", loc.ToString()));
+                Debug.Write(String.Format("{0}-", loc.ToString()));
                 foreach (Node node in storage["Wiki"].PostfixEnumerator(new List<StorageLocations> { loc }))
                 {
                     Debug.Write(node.Name + " ");
@@ -556,6 +562,7 @@ namespace UserModel
             }
 
             Debug.WriteLine("PreFix");
+            Debug.WriteLine("------");
 
             foreach (Node node in storage["Wiki"].PrefixEnumerator())
             {
@@ -565,7 +572,7 @@ namespace UserModel
 
             foreach (StorageLocations loc in Enum.GetValues(typeof(StorageLocations)))
             {
-                Debug.WriteLine(String.Format("{0}-", loc.ToString()));
+                Debug.Write(String.Format("{0}-", loc.ToString()));
                 foreach (Node node in storage["Wiki"].PrefixEnumerator(new List<StorageLocations> { loc }))
                 {
                     Debug.Write(node.Name + " ");

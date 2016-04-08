@@ -157,11 +157,11 @@
             // 
             // button9
             // 
-            this.button9.Location = new System.Drawing.Point(400, 458);
+            this.button9.Location = new System.Drawing.Point(305, 352);
             this.button9.Name = "button9";
-            this.button9.Size = new System.Drawing.Size(75, 23);
+            this.button9.Size = new System.Drawing.Size(107, 23);
             this.button9.TabIndex = 11;
-            this.button9.Text = "flat";
+            this.button9.Text = "4) Enumate Filtered";
             this.button9.UseVisualStyleBackColor = true;
             this.button9.Click += new System.EventHandler(this.button9_Click);
             // 

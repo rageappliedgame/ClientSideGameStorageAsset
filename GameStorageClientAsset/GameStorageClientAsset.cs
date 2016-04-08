@@ -575,12 +575,20 @@ namespace AssetPackage
 
                                 headers.Add("Content-Type", "application/json");
                                 headers.Add("Accept", "application/json");
+                                headers.Add("Authorization", String.Format("Bearer {0}", settings.UserToken));
 
-                                IssueRequest2(
-                                    String.Format("storage/data/{0}", model),
-                                    "POST",
-                                    headers,
-                                    SerializeData(model, location, format));
+//#error Format for mongo is not correct. should be "path": "value"
+
+                                String json = SerializeData(model, location, format);
+
+                                RequestResponse response = IssueRequest2(
+                                            String.Format("storage/data/{0}", model),
+                                            "POST",
+                                            headers,
+                                            json,
+                                            (Settings as GameStorageClientAssetSettings).Port);
+
+                                Debug.Print(response.body);
                             }
                             break;
 

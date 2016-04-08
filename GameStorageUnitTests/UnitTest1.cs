@@ -16,7 +16,7 @@
     public class UnitTest1
     {
         #region Constants
-#warning TEST IF RESTORING WORKS (STRUCTURE-ONLY BT DEFAULT).
+
         const string modelId = "test";
         const string restoredId = "restored";
 
@@ -24,7 +24,7 @@
 
         #region Fields
 
-        private GameStorageClientAsset asset;
+        private GameStorageClientAsset asset = new GameStorageClientAsset();
 
         private Node root;
 
@@ -40,6 +40,7 @@
         [TestCleanup]
         public void Cleanup()
         {
+#warning Check if all test code still works after the latest changes.
             asset[modelId].Clear();
         }
 
@@ -405,7 +406,11 @@
             sw.Stop();
             Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
 
-            String xml2 = restored.ToXml();
+            //! Fixup purpose as it cannot be restored (matches the asst.Models keys).
+            // 
+            String xml2 = restored.ToXml().Replace(
+                String.Format("purpose=\"{0}\"", restoredId),
+                String.Format("purpose=\"{0}\"", modelId));
 
             //Debug.Print(xml2);
 
@@ -446,15 +451,11 @@
 
             using (MemoryStream ms = new MemoryStream())
             {
-                StreamingContext sc = new StreamingContext(StreamingContextStates.All, true);
-
-                BinaryFormatter bf = new BinaryFormatter(null, sc);
-
                 Stopwatch sw = new Stopwatch();
 
                 sw.Reset();
                 sw.Start();
-                bf.Serialize(ms, root);
+                String base64 = root.ToBinary(true);
                 sw.Stop();
                 Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
 
@@ -465,17 +466,27 @@
 
                 sw.Reset();
                 sw.Start();
-                restored = (Node)bf.Deserialize(ms);
+                restored.FromBinary(base64, true);
                 sw.Stop();
                 Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
 
                 Debug.Print(restored.ToXml());
 
-                // We restore structure only, so root and restore will differ.
+                //! Fixup purpose as it cannot be restored (matches the asst.Models keys).
                 // 
-                Assert.AreNotEqual(root.ToXml(), restored.ToXml());
-                Assert.AreNotEqual(root["F"]["G"]["I"].Value, restored["F"]["G"]["I"].Value);
-                Assert.IsNull(restored["F"]["G"]["I"].Value);
+                String xml2 = restored.ToXml().Replace(
+                    String.Format("purpose=\"{0}\"", restoredId),
+                    String.Format("purpose=\"{0}\"", modelId));
+
+                Assert.AreEqual(root.ToXml(), xml2);
+
+                //! These should not be equal as we restore only the structure.
+                Assert.AreNotEqual(root.ToXml(false), xml2);
+
+                //! These should not be equal as we restore only the structure.
+                Assert.AreNotEqual(root["F"]["B"]["D"]["C"].Value, restored["F"]["B"]["D"]["C"].Value);
+
+                Assert.IsNull(restored["F"]["B"]["D"]["C"].Value);
                 Assert.IsFalse(restored.ToXml().Contains("<value>"));
             }
         }
@@ -516,26 +527,23 @@
 
             using (MemoryStream ms = new MemoryStream())
             {
-                StreamingContext sc = new StreamingContext(StreamingContextStates.All, false);
+                //StreamingContext sc = new StreamingContext(StreamingContextStates.All, false);
 
-                BinaryFormatter bf = new BinaryFormatter(null, sc);
+                //BinaryFormatter bf = new BinaryFormatter(null, sc);
 
                 Stopwatch sw = new Stopwatch();
 
                 sw.Reset();
                 sw.Start();
-                bf.Serialize(ms, root);
+                String base64 = root.ToBinary();
                 sw.Stop();
                 Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
 
                 Node restored = asset.AddModel(restoredId);
 
-                ms.Flush();
-                ms.Seek(0, SeekOrigin.Begin);
-
-                sw.Reset();
+                //sw.Reset();
                 sw.Start();
-                restored = (Node)bf.Deserialize(ms);
+                restored.FromBinary(base64);
                 sw.Stop();
                 Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
 
@@ -545,7 +553,13 @@
                 sw.Stop();
                 Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
 
-                Assert.AreEqual(root.ToXml(), restored.ToXml());
+                //! Fixup purpose as it cannot be restored (matches the asst.Models keys).
+                // 
+                String xml2 = restored.ToXml().Replace(
+                    String.Format("purpose=\"{0}\"", restoredId),
+                    String.Format("purpose=\"{0}\"", modelId));
+
+                Assert.AreEqual(root.ToXml(), xml2);
                 Assert.AreEqual(root["F"]["G"]["I"].Value, restored["F"]["G"]["I"].Value);
             }
         }
@@ -602,7 +616,13 @@
             Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
             Debug.Print(restored.ToXml());
 
-            Assert.AreEqual(root.ToXml(), restored.ToXml());
+            //! Fixup purpose as it cannot be restored (matches the asst.Models keys).
+            // 
+            String xml2 = restored.ToXml().Replace(
+                String.Format("purpose=\"{0}\"", restoredId),
+                String.Format("purpose=\"{0}\"", modelId));
+
+            Assert.AreEqual(root.ToXml(), xml2);
         }
 
         /// <summary>
