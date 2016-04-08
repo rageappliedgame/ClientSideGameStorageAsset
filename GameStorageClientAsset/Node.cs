@@ -1222,6 +1222,7 @@ namespace AssetPackage
             }
         }
 
+        /*
         /// <summary>
         /// Converts this object's Value to an XML.
         /// </summary>
@@ -1249,7 +1250,7 @@ namespace AssetPackage
                 return String.Empty;
             }
         }
-
+        */
         /// <summary>
         /// Convert this object into a binary (Base64 Encoded) representation.
         /// </summary>
@@ -1298,6 +1299,8 @@ namespace AssetPackage
                 //! tmp.Name should be 'root' and tmp.Parent and tmp.Value should both be null.
                 // 
                 this.children = tmp.children;
+
+                //this.Purpose = tmp.Purpose;
 
                 this.storageLocation = tmp.storageLocation;
                 if (!structureOnly)
@@ -1356,6 +1359,11 @@ namespace AssetPackage
             info.AddValue("name", this.Name);
             info.AddValue("location", this.storageLocation);
             info.AddValue("count", Count);
+
+            //if (Purpose != null)
+            //{
+            //    info.AddValue("purpose", Count);
+            //}
 
             if (this.Count != 0)
             {
