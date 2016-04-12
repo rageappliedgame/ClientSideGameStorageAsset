@@ -20,29 +20,48 @@ namespace UserModel
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.Linq;
     using System.Text.RegularExpressions;
     using System.Windows.Forms;
 
     using AssetPackage;
-    using Newtonsoft.Json;
+
     public partial class Form1 : Form
     {
-        GameStorageClientAsset storage = new GameStorageClientAsset();
+        #region Fields
 
-        TextBoxTraceListener textWriter = null;
+        /// <summary>
+        /// The Regex to match the generic name so `nn suffix can be replaces by &lt;
+        /// &gt; brackets paramaters. Only the `nn will actually be a match group.
+        /// </summary>
+        private static Regex gargs = new Regex(@"(?:.+)(`(?:\d+))(?:.?)");
 
-        [Serializable]
-        public class DemoStruct
-        {
-            public int a;
-            public string b;
-            public DateTime c;
-        }
-
-        private String user = "student1";
+        /// <summary>
+        /// The password.
+        /// </summary>
         private String pass = "test";
 
+        /// <summary>
+        /// The storage.
+        /// </summary>
+        GameStorageClientAsset storage = new GameStorageClientAsset();
+
+        /// <summary>
+        /// The text writer.
+        /// </summary>
+        TextBoxTraceListener textWriter = null;
+
+        /// <summary>
+        /// The username.
+        /// </summary>
+        private String user = "student1";
+
+        #endregion Fields
+
+        #region Constructors
+
+        /// <summary>
+        /// Initializes a new instance of the UserModel.Form1 class.
+        /// </summary>
         public Form1()
         {
             InitializeComponent();
@@ -64,53 +83,294 @@ namespace UserModel
             (storage.Settings as GameStorageClientAssetSettings).BasePath = "/api/";
 
             // Catch debugging output.
-            // 
+            //
             Debug.Listeners.Add(textWriter);
         }
 
+        #endregion Constructors
+
+        #region Methods
+
         /// <summary>
-        /// Build Wiki example tree.
-        /// 
-        /// See https://en.wikipedia.org/wiki/Tree_traversal
+        /// Event handler. Called by btnBinarySaveLoad for click events.
         /// </summary>
         ///
-        /// <returns>
-        /// A Node&lt;object&gt;
-        /// </returns>
-        private void WikiExampleTree(Node root)
+        /// <param name="sender"> Source of the event. </param>
+        /// <param name="e">      Event information. </param>
+        private void btnBinarySaveLoad_Click(object sender, EventArgs e)
         {
-            root.Clear();
+            BuildDemo();
 
-            List<byte> data = new List<byte>();
-            data.AddRange(new byte[] { 1, 2, 3, 4, 5 });
+            textBox1.Clear();
+            textBox2.Clear();
 
-            Node F = root.AddChild("F", "F");
-            Node B = F.AddChild("B", "B");
-            B.AddChild("A", "A");
-            B.Value = data;
-            Node D = B.AddChild("D", DateTime.Now, StorageLocations.Server);
-            D.AddChild("C", new DemoStruct
+            String base64 = String.Empty;
+
+            Stopwatch sw = new Stopwatch();
+
             {
-                a = 15,
-                b = "vijftien",
-                c = DateTime.Now
-            });
+                sw.Reset();
+                sw.Start();
 
-            D.AddChild("E", (Byte)5);
+                base64 = storage["Test"].ToBinary(false);
 
-            F.AddChild("G", StorageLocations.Game)
-                .AddChild("I", "I")
-                .AddChild("H", new string[] { "1", "2", "3", "4", "5", "6", "7", "8", "9", "0" }
-                //.AddChild("H", "H"
-                );
+                Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
+            }
 
-            // F +-- B +-- A
-            //   |     +-- D +-- C
-            //   |           +-- E
-            //   |
-            //   +-- G --- I --- H
+            Debug.Print(base64);
+
+            storage["Test"].Clear();
+            {
+                sw.Reset();
+                sw.Start();
+
+                storage["Test"].FromBinary(base64, false);
+
+                Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
+            }
+            Debug.Print(storage["Test"].Purpose);
+
+            textBox1.Text = storage["Test"].ToXml(false);
+            textBox2.Text = storage["Test"].ToXml();
+
+            Debug.Print(storage["Test"].Purpose);
         }
 
+        /// <summary>
+        /// Event handler. Called by btnConnect for click events.
+        /// </summary>
+        ///
+        /// <param name="sender"> Source of the event. </param>
+        /// <param name="e">      Event information. </param>
+        private void btnConnect_Click(object sender, EventArgs e)
+        {
+            if (storage.CheckHealth())
+            {
+                Debug.Print(storage.Health);
+
+                if (storage.Login(user, pass))
+                {
+                    Debug.Print("Logged-in");
+                }
+            }
+        }
+
+        /// <summary>
+        /// Event handler. Called by btnFilter for click events.
+        /// </summary>
+        ///
+        /// <param name="sender"> Source of the event. </param>
+        /// <param name="e">      Event information. </param>
+        private void btnFilter_Click(object sender, EventArgs e)
+        {
+            BuildDemo();
+
+            Debug.WriteLine("Modified Wiki Example Tree Traversal and Filtering");
+
+            Debug.WriteLine("PostFix");
+            Debug.WriteLine("-------");
+
+            foreach (Node node in storage["Wiki"].PostfixEnumerator())
+            {
+                Debug.Write(node.Name + " ");
+            }
+            Debug.WriteLine(String.Empty);
+
+            foreach (StorageLocations loc in Enum.GetValues(typeof(StorageLocations)))
+            {
+                Debug.Write(String.Format("{0}-", loc.ToString()));
+                foreach (Node node in storage["Wiki"].PostfixEnumerator(new List<StorageLocations> { loc }))
+                {
+                    Debug.Write(node.Name + " ");
+                }
+                Debug.WriteLine(String.Empty);
+            }
+
+            Debug.WriteLine("PreFix");
+            Debug.WriteLine("------");
+
+            foreach (Node node in storage["Wiki"].PrefixEnumerator())
+            {
+                Debug.Write(node.Name + " ");
+            }
+            Debug.WriteLine(String.Empty);
+
+            foreach (StorageLocations loc in Enum.GetValues(typeof(StorageLocations)))
+            {
+                Debug.Write(String.Format("{0}-", loc.ToString()));
+                foreach (Node node in storage["Wiki"].PrefixEnumerator(new List<StorageLocations> { loc }))
+                {
+                    Debug.Write(node.Name + " ");
+                }
+                Debug.WriteLine(String.Empty);
+            }
+            Debug.WriteLine(String.Empty);
+
+            //List<int> x = new List<int>();
+            //x.Add(10);
+            //x.Add(11);
+            //x.Add(12);
+
+            ////List`1
+            //Debug.Print(ResolveType(x.GetType()));
+            //Debug.Print(ResolveType(typeof(Dictionary<String, Int32>)));
+
+            //Debug.WriteLine(JsonConvert.SerializeObject(storage["Wiki"]["F"]["B"], Formatting.Indented));
+        }
+
+        /// <summary>
+        /// Event handler. Called by btnLoadData for click events.
+        /// </summary>
+        ///
+        /// <param name="sender"> Source of the event. </param>
+        /// <param name="e">      Event information. </param>
+        private void btnLoadData_Click(object sender, EventArgs e)
+        {
+            BuildDemo();
+
+            if (storage.Connected)
+            {
+                if (!storage.Types.ContainsKey(typeof(DemoClass).FullName))
+                {
+                    storage.Types.Add(typeof(DemoClass).FullName, typeof(DemoClass));
+                }
+
+                //{
+                //"nodes": [
+                //                  {
+                //      "Path": "F|B|D",
+                //                    "Value": {
+                //        "ValueType": "System.DateTime",
+                //                      "Value": "2016-04-12T10:31:01.2628781+02:00"
+                //      }
+                //    },
+                //    {
+                //      "Path": "F|B|D|C",
+                //      "Value": {
+                //        "ValueType": "UserModel.Form1+DemoStruct",
+                //        "Value": "{\r\n  \"a\": 15,\r\n  \"b\": \"vijftien\",\r\n  \"c\": \"2016-04-12T10:31:01.2628781+02:00\"\r\n}"
+                //      }
+                //    },
+                //    {
+                //      "Path": "F|B|D|E",
+                //      "Value": {
+                //        "ValueType": "System.Byte",
+                //        "Value": 5
+                //      }
+                //    }
+                //  ]
+                //}
+
+                textBox1.Text = storage["Wiki"].ToXml(false);
+
+                //! Clear is performed internally in LoadData().
+                //
+                //storage["Wiki"].ClearData(StorageLocations.Server);
+
+                Stopwatch sw = new Stopwatch();
+                {
+                    sw.Reset();
+                    sw.Start();
+                    storage.LoadData("Wiki", StorageLocations.Server, SerializingFormat.Json);
+                    sw.Stop();
+                    Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
+                }
+
+                textBox2.Text = storage["Wiki"].ToXml(false);
+            }
+            else
+            {
+                MessageBox.Show("Not Connected");
+            }
+        }
+
+        /// <summary>
+        /// Event handler. Called by btnLoadStructure for click events.
+        /// </summary>
+        ///
+        /// <param name="sender"> Source of the event. </param>
+        /// <param name="e">      Event information. </param>
+        private void btnLoadStructure_Click(object sender, EventArgs e)
+        {
+            textBox1.Clear();
+            textBox2.Clear();
+
+            BuildDemo();
+
+            Stopwatch sw = new Stopwatch();
+            {
+                sw.Reset();
+                sw.Start();
+                storage.LoadStructure("Test", StorageLocations.Local);
+                sw.Stop();
+                Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
+            }
+
+            textBox1.Text = storage["Test"].ToXml(false);
+            textBox2.Text = storage["Test"].ToXml(true);
+        }
+
+        /// <summary>
+        /// Event handler. Called by btnSaveData for click events.
+        /// </summary>
+        ///
+        /// <param name="sender"> Source of the event. </param>
+        /// <param name="e">      Event information. </param>
+        private void btnSaveData_Click(object sender, EventArgs e)
+        {
+            BuildDemo();
+
+            if (storage.Connected)
+            {
+                storage.SaveData("Wiki", StorageLocations.Server, SerializingFormat.Json);
+            }
+            else
+            {
+                MessageBox.Show("Not Connected");
+            }
+        }
+
+        /// <summary>
+        /// Event handler. Called by btnSaveLoadStructure for click events.
+        /// </summary>
+        ///
+        /// <param name="sender"> Source of the event. </param>
+        /// <param name="e">      Event information. </param>
+        private void btnSaveLoadStructure_Click(object sender, EventArgs e)
+        {
+            BuildDemo();
+
+            if (storage.Connected)
+            {
+                foreach (KeyValuePair<String, Node> kvp in storage)
+                {
+                    //! Structure + Data.
+                    //
+                    textBox1.Text = storage[kvp.Key].ToXml(false);
+
+                    storage.DeleteStructure(kvp.Key, StorageLocations.Server);
+
+                    storage.SaveStructure(kvp.Key, StorageLocations.Server);
+                    storage[kvp.Key].Clear();
+                    storage.LoadStructure(kvp.Key, StorageLocations.Server);
+
+                    //! Structure Only.
+                    //
+                    textBox2.Text = storage[kvp.Key].ToXml(false);
+                }
+            }
+            else
+            {
+                MessageBox.Show("Not Connected");
+            }
+        }
+
+        /// <summary>
+        /// Event handler. Called by btnSaveStructure for click events.
+        /// </summary>
+        ///
+        /// <param name="sender"> Source of the event. </param>
+        /// <param name="e">      Event information. </param>
         private void btnSaveStructure_Click(object sender, EventArgs e)
         {
             textBox1.Clear();
@@ -148,6 +408,22 @@ namespace UserModel
             Debug.Print("{0}={1}", "Hints.Test.Age", storage["User"]["Age"]);
         }
 
+        /// <summary>
+        /// Event handler. Called by btnVirtual for click events.
+        /// </summary>
+        ///
+        /// <param name="sender"> Source of the event. </param>
+        /// <param name="e">      Event information. </param>
+        private void btnVirtual_Click(object sender, EventArgs e)
+        {
+            BuildDemo();
+
+            textBox1.Text += storage["User"]["Virtual"].Value.ToString();
+        }
+
+        /// <summary>
+        /// Builds the demo.
+        /// </summary>
         private void BuildDemo()
         {
             textBox1.Clear();
@@ -158,18 +434,18 @@ namespace UserModel
             storage["Test"].Clear();
             storage["Wiki"].Clear();
 
-#warning todo pretty print generic types?
+            #warning todo pretty print generic types?
 
             // See https://msdn.microsoft.com/en-us/library/windows/apps/system.type.makegenerictype(v=vs.105).aspx
             // See https://msdn.microsoft.com/en-us/library/windows/apps/system.type.getgenerictypedefinition(v=vs.105).aspx
-            // 
+            //
             // Type.MakeGenericType
             // Type.GetGenericArguments
-            // 
+            //
             // Type t = Type.GetType("System.Collections.Generic.Dictionary`2[System.String,System.Object]");
 
             // 0) Complete payload.
-            storage["User"].AddChild("STRUCT", new DemoStruct
+            storage["User"].AddChild("STRUCT", new DemoClass
             {
                 a = 10,
                 b = "elf",
@@ -215,233 +491,67 @@ namespace UserModel
             WikiExampleTree(storage["Wiki"]);
         }
 
-        private void btnLoadStructure_Click(object sender, EventArgs e)
+        /// <summary>
+        /// Build Wiki example tree.
+        /// 
+        /// See https://en.wikipedia.org/wiki/Tree_traversal
+        /// </summary>
+        ///
+        /// <returns>
+        /// A Node&lt;object&gt;
+        /// </returns>
+        private void WikiExampleTree(Node root)
         {
-            textBox1.Clear();
-            textBox2.Clear();
+            root.Clear();
 
-            BuildDemo();
+            List<byte> data = new List<byte>();
+            data.AddRange(new byte[] { 1, 2, 3, 4, 5 });
 
-            Stopwatch sw = new Stopwatch();
+            Node F = root.AddChild("F", "F");
+            Node B = F.AddChild("B", "B");
+            B.AddChild("A", "A");
+            B.Value = data;
+            Node D = B.AddChild("D", DateTime.Now, StorageLocations.Server);
+            D.AddChild("C", new DemoClass
             {
-                sw.Reset();
-                sw.Start();
-                storage.LoadStructure("Test", StorageLocations.Local);
-                sw.Stop();
-                Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
-            }
-
-            textBox1.Text = storage["Test"].ToXml(false);
-            textBox2.Text = storage["Test"].ToXml(true);
-        }
-
-        private void btnVirtual_Click(object sender, EventArgs e)
-        {
-            BuildDemo();
-
-            textBox1.Text += storage["User"]["Virtual"].Value.ToString();
-        }
-
-        private void btnLoadData_Click(object sender, EventArgs e)
-        {
-            BuildDemo();
-
-            if (storage.Connected)
-            {
-                if (!storage.Types.ContainsKey(typeof(DemoStruct).FullName))
-                {
-                    storage.Types.Add(typeof(DemoStruct).FullName, typeof(DemoStruct));
-                }
-
-                //{
-                //"nodes": [
-                //                  {
-                //      "Path": "F|B|D",
-                //                    "Value": {
-                //        "ValueType": "System.DateTime",
-                //                      "Value": "2016-04-12T10:31:01.2628781+02:00"
-                //      }
-                //    },
-                //    {
-                //      "Path": "F|B|D|C",
-                //      "Value": {
-                //        "ValueType": "UserModel.Form1+DemoStruct",
-                //        "Value": "{\r\n  \"a\": 15,\r\n  \"b\": \"vijftien\",\r\n  \"c\": \"2016-04-12T10:31:01.2628781+02:00\"\r\n}"
-                //      }
-                //    },
-                //    {
-                //      "Path": "F|B|D|E",
-                //      "Value": {
-                //        "ValueType": "System.Byte",
-                //        "Value": 5
-                //      }
-                //    }
-                //  ]
-                //}
-
-                textBox1.Text = storage["Wiki"].ToXml(false);
-
-                //! Clear is performed internally in LoadData().
-                // 
-                //storage["Wiki"].ClearData(StorageLocations.Server);
-
-                Stopwatch sw = new Stopwatch();
-                {
-                    sw.Reset();
-                    sw.Start();
-                    storage.LoadData("Wiki", StorageLocations.Server, SerializingFormat.Json);
-                    sw.Stop();
-                    Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
-                }
-
-                textBox2.Text = storage["Wiki"].ToXml(false);
-            }
-            else
-            {
-                MessageBox.Show("Not Connected");
-            }
-        }
-
-        private void btnBinarySaveLoad_Click(object sender, EventArgs e)
-        {
-            BuildDemo();
-
-            textBox1.Clear();
-            textBox2.Clear();
-
-            String base64 = String.Empty;
-
-            Stopwatch sw = new Stopwatch();
-
-            {
-                sw.Reset();
-                sw.Start();
-
-                base64 = storage["Test"].ToBinary(false);
-
-                Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
-            }
-
-            Debug.Print(base64);
-
-            storage["Test"].Clear();
-            {
-                sw.Reset();
-                sw.Start();
-
-                storage["Test"].FromBinary(base64, false);
-
-                Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
-            }
-            Debug.Print(storage["Test"].Purpose);
-
-            textBox1.Text = storage["Test"].ToXml(false);
-            textBox2.Text = storage["Test"].ToXml();
-
-            Debug.Print(storage["Test"].Purpose);
-        }
-
-        private /*async*/ void btnConnect_Click(object sender, EventArgs e)
-        {
-            if (storage.CheckHealth())
-            {
-                Debug.Print(storage.Health);
-
-                if (storage.Login(user, pass))
-                {
-                    Debug.Print("Logged-in");
-                }
-            }
-        }
-
-        /*
-        private bool CheckHealth()
-        {
-            //! Make CheckHealth() async (warning: gives dead-lock with TraceListener).
-            // 
-            {
-                //return Task.Factory.StartNew<bool>(() => { return storage.CheckHealth(); }).Result;
-            }
-            {
-                //Task<bool> taskName = Task.Factory.StartNew<bool>(() => { return storage.CheckHealth(); });
-
-                //Debug.Print("Hello1 (during request)");
-
-                //bool Result = taskName.Result;
-
-                //Debug.Print("Hello2 (after request)");
-            }
-            //return Result;
-        }
-
-        private bool Login()
-        {
-            Task<bool> taskName = Task.Factory.StartNew<bool>(() => { return storage.Login(user, pass); });
-
-            return taskName.Result;
-        }
-
-        private async Task<bool> SaveStructureToServer(string key)
-        {
-            return await Task.Factory.StartNew(() =>
-            {
-                storage.SaveStructure(key, StorageLocations.Server);
-
-                return storage.Connected;
+                a = 15,
+                b = "vijftien",
+                c = DateTime.Now
             });
+
+            D.AddChild("E", (Byte)5);
+
+            F.AddChild("G", StorageLocations.Game)
+                .AddChild("I", "I")
+                .AddChild("H", new string[] { "1", "2", "3", "4", "5", "6", "7", "8", "9", "0" }
+                //.AddChild("H", "H"
+                );
+
+            // F +-- B +-- A
+            //   |     +-- D +-- C
+            //   |           +-- E
+            //   |
+            //   +-- G --- I --- H
         }
 
-        private async Task<bool> LoadStructureFromServer(string key)
-        {
-            return await Task.Factory.StartNew(() =>
-            {
-                storage.LoadStructure(key, StorageLocations.Server);
-
-                return storage.Connected;
-            });
-        }
-
-        private async Task<bool> DeleteStructureFromServer(string key)
-        {
-            return await Task.Factory.StartNew(() =>
-            {
-                storage.DeleteStructure(key, StorageLocations.Server);
-
-                return storage.Connected;
-            });
-        }
-        */
-
-        private /*async*/ void btnSaveLoadStructure_Click(object sender, EventArgs e)
-        {
-            BuildDemo();
-
-            if (storage.Connected)
-            {
-                foreach (KeyValuePair<String, Node> kvp in storage)
-                {
-                    //! Structure + Data.
-                    // 
-                    textBox1.Text = storage[kvp.Key].ToXml(false);
-
-                    storage.DeleteStructure(kvp.Key, StorageLocations.Server);
-
-                    storage.SaveStructure(kvp.Key, StorageLocations.Server);
-                    storage[kvp.Key].Clear();
-                    storage.LoadStructure(kvp.Key, StorageLocations.Server);
-
-                    //! Structure Only.
-                    // 
-                    textBox2.Text = storage[kvp.Key].ToXml(false);
-                }
-            }
-            else
-            {
-                MessageBox.Show("Not Connected");
-            }
-        }
+        #endregion Methods
 
         #region Nested Types
+
+        /// <summary>
+        /// (Serializable)a demo class.
+        /// </summary>
+        [Serializable]
+        public class DemoClass
+        {
+            #region Fields
+
+            public int a;
+            public string b;
+            public DateTime c;
+
+            #endregion Fields
+        }
 
         /// <summary>
         /// See http://www.codeproject.com/KB/trace/TextBoxTraceListener.aspx.
@@ -450,10 +560,13 @@ namespace UserModel
         {
             #region Fields
 
+            /// <summary>
+            /// The invoke write.
+            /// </summary>
             private StringSendDelegate fInvokeWrite;
 
             /// <summary>
-            /// Target for the.
+            /// Target for the Writer.
             /// </summary>
             private TextBox fTarget;
 
@@ -462,7 +575,8 @@ namespace UserModel
             #region Constructors
 
             /// <summary>
-            /// Initializes a new instance of the Swiss.DebugForm.NextGridTraceListener class.
+            /// Initializes a new instance of the Swiss.DebugForm.NextGridTraceListener
+            /// class.
             /// </summary>
             ///
             /// <param name="target"> Target for the. </param>
@@ -525,101 +639,5 @@ namespace UserModel
         }
 
         #endregion Nested Types
-
-        private void btnSaveData_Click(object sender, EventArgs e)
-        {
-            BuildDemo();
-
-            if (storage.Connected)
-            {
-                storage.SaveData("Wiki", StorageLocations.Server, SerializingFormat.Json);
-            }
-            else
-            {
-                MessageBox.Show("Not Connected");
-            }
-        }
-
-        private void btnFilter_Click(object sender, EventArgs e)
-        {
-            BuildDemo();
-
-            Debug.WriteLine("Modified Wiki Example Tree Traversal and Filtering");
-
-            Debug.WriteLine("PostFix");
-            Debug.WriteLine("-------");
-
-            foreach (Node node in storage["Wiki"].PostfixEnumerator())
-            {
-                Debug.Write(node.Name + " ");
-            }
-            Debug.WriteLine(String.Empty);
-
-            foreach (StorageLocations loc in Enum.GetValues(typeof(StorageLocations)))
-            {
-                Debug.Write(String.Format("{0}-", loc.ToString()));
-                foreach (Node node in storage["Wiki"].PostfixEnumerator(new List<StorageLocations> { loc }))
-                {
-                    Debug.Write(node.Name + " ");
-                }
-                Debug.WriteLine(String.Empty);
-            }
-
-            Debug.WriteLine("PreFix");
-            Debug.WriteLine("------");
-
-            foreach (Node node in storage["Wiki"].PrefixEnumerator())
-            {
-                Debug.Write(node.Name + " ");
-            }
-            Debug.WriteLine(String.Empty);
-
-            foreach (StorageLocations loc in Enum.GetValues(typeof(StorageLocations)))
-            {
-                Debug.Write(String.Format("{0}-", loc.ToString()));
-                foreach (Node node in storage["Wiki"].PrefixEnumerator(new List<StorageLocations> { loc }))
-                {
-                    Debug.Write(node.Name + " ");
-                }
-                Debug.WriteLine(String.Empty);
-            }
-            Debug.WriteLine(String.Empty);
-
-            //List<int> x = new List<int>();
-            //x.Add(10);
-            //x.Add(11);
-            //x.Add(12);
-
-            ////List`1
-            //Debug.Print(ResolveType(x.GetType()));
-            //Debug.Print(ResolveType(typeof(Dictionary<String, Int32>)));
-
-            //Debug.WriteLine(JsonConvert.SerializeObject(storage["Wiki"]["F"]["B"], Formatting.Indented));
-        }
-
-        /// <summary>
-        /// The Regex to match the generic name so `nn suffix can be replaces by &lt;
-        /// &gt; brackets paramaters. Only the `nn will actually be a match group.
-        /// </summary>
-        private static Regex gargs = new Regex(@"(?:.+)(`(?:\d+))(?:.?)");
-
-        private static String ResolveType(Type t)
-        {
-            String cls = t.Name;
-
-            if (t.IsGenericType)
-            {
-                //Match m = gargs.Match(cls);
-                //if (m.Groups.Count == 2)
-                //{
-                //    cls = cls.Remove(m.Groups[1].Index, m.Groups[1].Length);
-                //    cls = cls.Insert(m.Groups[1].Index, String.Format("<{0}>", String.Join(",", t.GenericTypeArguments.Select(p => p.Name))));
-                //}
-
-                cls = t.GetGenericTypeDefinition().Name;
-            }
-
-            return cls;
-        }
     }
 }
