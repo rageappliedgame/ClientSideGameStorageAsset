@@ -716,6 +716,20 @@ namespace AssetPackage
         }
 
         /// <summary>
+        /// Clears the data described by location.
+        /// </summary>
+        ///
+        /// <param name="location"> The location. </param>
+        public void ClearData(StorageLocations location)
+        {
+            //! Recusively Clear Data.
+            foreach (Node child in this.PostfixEnumerator(new List<StorageLocations> { location }))
+            {
+                child.Value = null;
+            }
+        }
+
+        /// <summary>
         /// Adds a child to 'Value'.
         /// </summary>
         ///

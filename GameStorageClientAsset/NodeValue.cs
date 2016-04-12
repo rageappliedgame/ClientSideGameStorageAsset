@@ -3,10 +3,41 @@
     using System;
 
     /// <summary>
-    /// A node value, used for building an array of serialized values.
+    /// (Serializable)nodes  'Plain Old Class', used for building an array of
+    /// (de)serialized values.
     /// </summary>
-    public class NodeValue
+    ///
+    /// <remarks>
+    /// No properties as Unity3D will, also case sensitive.
+    /// </remarks>
+    [Serializable]
+    public class NodesPoc
     {
+        /// <summary>
+        /// The nodes.
+        /// </summary>
+        public NodePoc[] nodes;
+    }
+
+    /// <summary>
+    /// (Serializable)A node 'Plain Old Class'.
+    /// </summary>
+    ///
+    /// <remarks>
+    /// No properties as Unity3D will, also case sensitive.
+    /// </remarks>
+    [Serializable]
+    public class NodePoc
+    {
+        /// <summary>
+        /// Initializes a new instance of the AssetPackage.NodeJson class.
+        /// </summary>
+        public NodePoc()
+        {
+            Path = String.Empty;
+            Value = new ValuePoc();
+        }
+
         /// <summary>
         /// Gets or sets the full pathname of the file.
         /// </summary>
@@ -14,8 +45,28 @@
         /// <value>
         /// The full pathname of the file.
         /// </value>
-        public String Path { get; set; }
+        public String Path;
 
+        /// <summary>
+        /// Gets the node value.
+        /// </summary>
+        ///
+        /// <value>
+        /// .
+        /// </value>
+        public ValuePoc Value;
+    }
+
+    /// <summary>
+    /// (Serializable) A node value 'Plain Old Class'.
+    /// </summary>
+    ///
+    /// <remarks>
+    /// No properties as Unity3D will, also case sensitive.
+    /// </remarks>
+    [Serializable]
+    public class ValuePoc
+    {
         /// <summary>
         /// Gets or sets the type.
         /// </summary>
@@ -23,7 +74,7 @@
         /// <value>
         /// The type.
         /// </value>
-        public String ValueType { get; set; }
+        public String ValueType;
 
         /// <summary>
         /// Gets or sets the value.
@@ -32,6 +83,6 @@
         /// <value>
         /// The value.
         /// </value>
-        public Object Value { get; set; }
+        public Object Value;
     }
 }
