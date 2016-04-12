@@ -25,7 +25,7 @@ namespace UserModel
     using System.Windows.Forms;
 
     using AssetPackage;
-
+    using Newtonsoft.Json;
     public partial class Form1 : Form
     {
         GameStorageClientAsset storage = new GameStorageClientAsset();
@@ -33,7 +33,7 @@ namespace UserModel
         TextBoxTraceListener textWriter = null;
 
         [Serializable]
-        public struct DemoStruct
+        public class DemoStruct
         {
             public int a;
             public string b;
@@ -111,7 +111,7 @@ namespace UserModel
             //   +-- G --- I --- H
         }
 
-        private void button1_Click(object sender, EventArgs e)
+        private void btnSaveStructure_Click(object sender, EventArgs e)
         {
             textBox1.Clear();
             textBox2.Clear();
@@ -150,6 +150,9 @@ namespace UserModel
 
         private void BuildDemo()
         {
+            textBox1.Clear();
+            textBox2.Clear();
+
             storage["Hint"].Clear();
             storage["User"].Clear();
             storage["Test"].Clear();
@@ -212,7 +215,7 @@ namespace UserModel
             WikiExampleTree(storage["Wiki"]);
         }
 
-        private void button2_Click(object sender, EventArgs e)
+        private void btnLoadStructure_Click(object sender, EventArgs e)
         {
             textBox1.Clear();
             textBox2.Clear();
@@ -232,82 +235,74 @@ namespace UserModel
             textBox2.Text = storage["Test"].ToXml(true);
         }
 
-        private void button3_Click(object sender, EventArgs e)
+        private void btnVirtual_Click(object sender, EventArgs e)
         {
             BuildDemo();
 
-            textBox1.Clear();
-            textBox2.Clear();
-
             textBox1.Text += storage["User"]["Virtual"].Value.ToString();
-
-            //usermodel.Clear();
-
-            //usermodel.Bridge = new Bridge();
-
-            //usermodel.Add<Int32>("Virtual", Locations.Game);
-            //usermodel.Add<String>("Hello", Locations.Game);
-            //usermodel.Add<DateTime>("Now", Locations.Game);
-
-            //usermodel.Add<DateTime>("Server", Locations.Server);
-
-            //usermodel.Add("Real", 1.00);
-
-            //textBox1.Text += String.Format("IsDirty={0}\r\n", usermodel.isDirty);
-
-            //// Will change the value.
-            //usermodel["Real"] = 1.01;
-
-            //// Will not change the value.
-            //usermodel["Virtual"] = 15;
-
-            //// Will not change the value.
-            //usermodel["Server"] = new DateTime(0);
-
-            //usermodel["newby"] = 15;
-
-            //foreach (String key in usermodel.Keys)
-            //{
-            //    textBox1.Text += String.Format("{0}={1}; {2}\r\n", key, usermodel[key]);
-            //}
         }
 
-        private void button4_Click(object sender, EventArgs e)
+        private void btnLoadData_Click(object sender, EventArgs e)
         {
-            //textBox1.Clear();
-            //textBox2.Clear();
+            BuildDemo();
 
-            //WikiExampleTree(storage["Wiki"]);
+            if (storage.Connected)
+            {
+                if (!storage.Types.ContainsKey(typeof(DemoStruct).FullName))
+                {
+                    storage.Types.Add(typeof(DemoStruct).FullName, typeof(DemoStruct));
+                }
 
-            //Stopwatch sw = new Stopwatch();
-            //{
-            //    sw.Reset();
-            //    sw.Start();
+                //{
+                //"nodes": [
+                //                  {
+                //      "Path": "F|B|D",
+                //                    "Value": {
+                //        "ValueType": "System.DateTime",
+                //                      "Value": "2016-04-12T10:31:01.2628781+02:00"
+                //      }
+                //    },
+                //    {
+                //      "Path": "F|B|D|C",
+                //      "Value": {
+                //        "ValueType": "UserModel.Form1+DemoStruct",
+                //        "Value": "{\r\n  \"a\": 15,\r\n  \"b\": \"vijftien\",\r\n  \"c\": \"2016-04-12T10:31:01.2628781+02:00\"\r\n}"
+                //      }
+                //    },
+                //    {
+                //      "Path": "F|B|D|E",
+                //      "Value": {
+                //        "ValueType": "System.Byte",
+                //        "Value": 5
+                //      }
+                //    }
+                //  ]
+                //}
 
-            //    foreach (Node node in storage["Wiki"].PrefixEnumerator())
-            //    {
-            //        if (node.Value != null)
-            //        {
-            //            string xml = node.ToXmlValue();
-            //        }
-            //    }
+                textBox1.Text = storage["Wiki"].ToXml(false);
 
-            //    sw.Stop();
-            //    Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
-            //}
+                //! Clear is performed internally in LoadData().
+                // 
+                //storage["Wiki"].ClearData(StorageLocations.Server);
 
-            ////textBox2.Text += storage["Wiki"].ToJson(StorageLocations.Local);
+                Stopwatch sw = new Stopwatch();
+                {
+                    sw.Reset();
+                    sw.Start();
+                    storage.LoadData("Wiki", StorageLocations.Server, SerializingFormat.Json);
+                    sw.Stop();
+                    Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
+                }
 
-            //foreach (Node node in storage["Wiki"].PrefixEnumerator())
-            //{
-            //    if (node.Value != null)
-            //    {
-            //        textBox1.AppendText(String.Format("{0}\r\n{1}\r\n\r\n", node.Path, node.ToXmlValue()));
-            //    }
-            //}
+                textBox2.Text = storage["Wiki"].ToXml(false);
+            }
+            else
+            {
+                MessageBox.Show("Not Connected");
+            }
         }
 
-        private void button5_Click(object sender, EventArgs e)
+        private void btnBinarySaveLoad_Click(object sender, EventArgs e)
         {
             BuildDemo();
 
@@ -346,7 +341,7 @@ namespace UserModel
             Debug.Print(storage["Test"].Purpose);
         }
 
-        private /*async*/ void button6_Click(object sender, EventArgs e)
+        private /*async*/ void btnConnect_Click(object sender, EventArgs e)
         {
             if (storage.CheckHealth())
             {
@@ -417,12 +412,12 @@ namespace UserModel
         }
         */
 
-        private /*async*/ void button7_Click(object sender, EventArgs e)
+        private /*async*/ void btnSaveLoadStructure_Click(object sender, EventArgs e)
         {
+            BuildDemo();
+
             if (storage.Connected)
             {
-                BuildDemo();
-
                 foreach (KeyValuePair<String, Node> kvp in storage)
                 {
                     //! Structure + Data.
@@ -439,6 +434,10 @@ namespace UserModel
                     // 
                     textBox2.Text = storage[kvp.Key].ToXml(false);
                 }
+            }
+            else
+            {
+                MessageBox.Show("Not Connected");
             }
         }
 
@@ -527,16 +526,21 @@ namespace UserModel
 
         #endregion Nested Types
 
-        private void button8_Click(object sender, EventArgs e)
+        private void btnSaveData_Click(object sender, EventArgs e)
         {
             BuildDemo();
 
-            //Debug.Print(storage.SerializeData("Wiki", StorageLocations.Local, SerializingFormat.Json));
-            //Debug.Print(storage.SerializeData("Wiki", StorageLocations.Server, SerializingFormat.Json));
-            storage.SaveData("Wiki", StorageLocations.Server, SerializingFormat.Json);
+            if (storage.Connected)
+            {
+                storage.SaveData("Wiki", StorageLocations.Server, SerializingFormat.Json);
+            }
+            else
+            {
+                MessageBox.Show("Not Connected");
+            }
         }
 
-        private void button9_Click(object sender, EventArgs e)
+        private void btnFilter_Click(object sender, EventArgs e)
         {
             BuildDemo();
 
