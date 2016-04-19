@@ -22,6 +22,7 @@ namespace AssetPackage
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
+    using System.Reflection;
     using System.Text;
     using System.Text.RegularExpressions;
 
@@ -278,6 +279,17 @@ namespace AssetPackage
 
         #region Methods
 
+        public void RegisterTypes(Type[] types)
+        {
+            foreach (Type type in types)
+            {
+                if (!Types.ContainsKey(type.FullName))
+                {
+                    Types.Add(type.FullName, type);
+                }
+            }
+        }
+
         /// <summary>
         /// Adds a model.
         /// </summary>
@@ -402,6 +414,29 @@ namespace AssetPackage
         }
 
         /// <summary>
+        /// Gets a type.
+        /// </summary>
+        ///
+        /// <param name="typename"> The type. </param>
+        ///
+        /// <returns>
+        /// The type.
+        /// </returns>
+        private Type GetType(String typename)
+        {
+            if (!Types.ContainsKey(typename))
+            {
+                Debug.Print("Caching Type FullName for {0}", typename);
+
+                Type type = Type.GetType(typename);
+
+                Types.Add(type.FullName, type);
+            }
+
+            return Types[typename];
+        }
+
+        /// <summary>
         /// Loads a structure.
         /// </summary>
         ///
@@ -503,20 +538,49 @@ namespace AssetPackage
 
                     if (storage != null)
                     {
-                        if (storage.Exists(model + ".xml"))
+                        switch (format)
                         {
-                            if (Models.ContainsKey(model))
-                            {
-                                Models[model].ClearData(location);
-                            }
-                            else
-                            {
-                                Models[model] = new Node(this, model);
-                            }
+                            case SerializingFormat.Xml:
+                                if (storage.Exists(model + ".xml"))
+                                {
+                                    if (Models.ContainsKey(model))
+                                    {
+                                        Models[model].ClearData(location);
+                                    }
+                                    else
+                                    {
+                                        Models[model] = new Node(this, model);
+                                    }
 
-                            Models[model].FromXml(storage.Load(model + ".xml"));
+                                    Models[model].FromXml(storage.Load(model + ".xml"));
 
-                            return true;
+                                    return true;
+                                }
+                                break;
+
+                            case SerializingFormat.Json:
+                                if (storage.Exists(model + ".json"))
+                                {
+                                    if (Models.ContainsKey(model))
+                                    {
+                                        Models[model].ClearData(location);
+                                    }
+                                    else
+                                    {
+                                        Models[model] = new Node(this, model);
+                                    }
+
+                                    string json = storage.Load(model + ".json");
+
+                                    DeSerializeData(model, json, location, format);
+
+                                    return true;
+                                }
+                                break;
+
+                            case SerializingFormat.Binary:
+                                // TODO Implement 
+                                break;
                         }
                     }
                     else
@@ -764,15 +828,23 @@ namespace AssetPackage
                 //! 3) If class, it was serialize as string 
                 //!    Note: Structs (other then internally handled internally by the serializer i.e. Guid, DataTime) are not supported yet.
                 //!    Note: Code should be improved (there should be no data in it that is not marker with a [Serializable] attribute).
-                // 
-                if (nt.IsClass && nt.IsSerializable)
+                if (node.Value is String)
+                {
+                    nodePoc.Value.Value = node.Value.ToString();
+                }
+                else if (node.Value is DateTime)
+                {
+                    nodePoc.Value.Value = ((DateTime)(node.Value)).ToString("O");
+                }
+                else if (nt.IsClass && nt.IsSerializable)
                 {
                     nodePoc.Value.Value = serializer.Serialize(node.Value, format);
                 }
                 else
                 {
-                    nodePoc.Value.Value = node.Value;
+                    nodePoc.Value.Value = node.Value.ToString();
                 }
+
                 nodePoc.Value.ValueType = node.Value.GetType().FullName;
 
                 //! 4) Write value.
@@ -824,75 +896,100 @@ namespace AssetPackage
         /// <param name="format">     Describes the format to use. </param>
         private void Deserialize(ISerializer serializer, Node root, String data, StorageLocations location, SerializingFormat format)
         {
-            NodesPoc nodes = (NodesPoc)serializer.Deserialize(data, typeof(NodesPoc), SerializingFormat.Json);
+            NodesPoc nodes = (NodesPoc)serializer.Deserialize<NodesPoc>(data, SerializingFormat.Json);
 
-            //! 1) Enumerate all deserialzied nodes.
+            //! 0) Get the generic type definition
+            // 
+            //! See http://stackoverflow.com/questions/4667981/c-sharp-use-system-type-as-generic-parameter
+            // 
+            MethodInfo method = serializer.GetType().GetMethod("Deserialize", new Type[] { typeof(String), typeof(SerializingFormat) }/* BindingFlags.Public*/);
+
+            //! 1) Enumerate all deserialized nodes.
             // 
             for (Int32 i = 0; i < nodes.nodes.Length; i++)
             {
                 NodePoc node = nodes.nodes[i];
 
+                //! 2) Problem, in Unity all serialized Value.Value's are empty (probably due to the object type in nodepoc).
+                //!             so we now use 2 fields, Value for serializing and object for deserializing.
+                //!             also the generic parameter is not that easy to handle as we have only a type.
+                //!             We need to create a suitable generic method for custom types.
+
                 //! Type's FullName works (even without the extra's between the [[ ]].
+                // 
                 //! Type.GetType("System.Collections.Generic.List`1[[System.String]]")
-                //! Won't work on UserModel.Form1+DemoStruct (we need to register/resolve those somewhere).
+                //! instead of "System.Collections.Generic.List`1[[System.String, mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089]]"
                 // 
                 //! Better make them numeric (smaller) and preregister the most common (IsPrimitive) ones.
 
-                Debug.Print("------");
-
-                //! 2) Check if type was registered.
+                //! 3) Check if type was registered.
                 // 
-                if (Types.ContainsKey(node.Value.ValueType))
+                Type nt = node.Value.Value.GetType();
+                Type tt = GetType(node.Value.ValueType);
+
+                // This does not change the node in nodes.
+                // 
+                node.Path = node.Path.Replace('|', '.');
+
+                //Debug.Print("Path: {0}", node.Path);
+                //Debug.Print("Expected Type: {0}", node.Value.ValueType);
+                //Debug.Print("Deserialized Type: {0}", nt.FullName);
+
+                //! 3) If Serializable Class, it was serialized as String. Correct type if neccesary.
+                //!    Note: Structs (other then internally handled internally by the serializer i.e. Guid, DataTime) are not supported yet.
+                //!    Note: The test for strucst (nt.IsValueType && !nt.IsEnum) also returns true for DataTime and Guid which are structs handled by serializers.
+                // 
+                if (!nt.FullName.Equals(node.Value.ValueType))
                 {
-                    Type nt = node.Value.Value.GetType();
-                    Type tt = Types[node.Value.ValueType];
-
-                    node.Path = node.Path.Replace('|', '.');
-
-                    Debug.Print("Path: {0}", node.Path);
-                    Debug.Print("Expected Type: {0}", node.Value.ValueType);
-                    Debug.Print("Deserialized Type: {0}", nt.FullName);
-
-                    //! 3) If Serializable Class, it was serialized as String. Correct type if neccesary.
-                    //!    Note: Structs (other then internally handled internally by the serializer i.e. Guid, DataTime) are not supported yet.
-                    //!    Note: The test for strucst (nt.IsValueType && !nt.IsEnum) also returns true for DataTime and Guid which are structs handled by serializers.
-                    // 
-                    if (!nt.FullName.Equals(node.Value.ValueType))
+                    //! All 
+                    if (tt.IsClass && tt.IsSerializable && nt.Name.Equals(typeof(String).Name))
                     {
-                        if (tt.IsClass && tt.IsSerializable && nt.Name.Equals(typeof(String).Name))
-                        {
-                            //! 4a) Handle classes that are serialized as String.
-                            // 
-                            nodes.nodes[i].Value.Value = serializer.Deserialize(node.Value.Value.ToString(), tt, format);
-                        }
-                        else
-                        {
-                            //! 4b) Handle smaller type mismatches like a Byte 5 being turned into a Int64 4 by NewtonSoft.
-                            // 
-                            nodes.nodes[i].Value.Value = Convert.ChangeType(node.Value.Value, tt);
-                        }
-                    }
+                        //! 4a) Handle classes that are serialized as String.
+                        // 
+                        //
+#warning Experimental code (String/Object) Test on iOS etc.
 
-                    Debug.Print("Final (corrected) Type: {0}", nodes.nodes[i].Value.Value.GetType().FullName);
+                        // Build a method with the specific type argument you're interested in
+                        method = method.MakeGenericMethod(tt);
+                        // The "null" is because it's a static method
+                        nodes.nodes[i].Value.ObjectValue = method.Invoke(serializer, new Object[] { node.Value.Value.ToString(), format });
+
+                        //! Deserialize<tt> fails because of the generic parameter. By passing it twice (as generic/parameter the compiler can deduce it).
+                        //    
+                        // nodes.nodes[i].Value.Value = (tt)serializer.Deserialize<tt>(node.Value.Value.ToString(), format);
+                    }
+                    else
+                    {
+                        //! 4b) Handle smaller type mismatches like a Byte 5 being turned into a Int64 by NewtonSoft.
+                        // 
+                        nodes.nodes[i].Value.ObjectValue = Convert.ChangeType(node.Value.Value, tt);
+                    }
                 }
                 else
                 {
-                    Debug.Print("Can't deserialize {0}", node.Value.ValueType);
+                    nodes.nodes[i].Value.ObjectValue = Convert.ChangeType(node.Value.Value, tt);
                 }
 
+                //Debug.Print("Final (corrected) Type: {0}", nodes.nodes[i].Value.Value.GetType().FullName);
             }
 
             //! 5) Rebuild tree.
             foreach (Node node in root.PrefixEnumerator(new List<StorageLocations> { location }))
             {
-                NodePoc np = nodes.nodes.First(p => p.Path.Equals(node.Path));
+                //! Note the separator differs.
+                NodePoc np = nodes.nodes.FirstOrDefault(p => p.Path.Equals(node.Path));
                 if (np != null)
                 {
-                    // Search path in Tree and alter there.
-                    node.Value = np.Value.Value;
+                    //! Alternative: Search path in Tree and alter there.
+                    node.Value = np.Value.ObjectValue;
                 }
             }
         }
+
+        //public object DeserializeHelper<T>(ISerializer serializer, string value, T type)
+        //{
+        //    return serializer.Deserialize<T>(value, SerializingFormat.Json);
+        //}
 
         private void DeSerializeData(String model, String data, StorageLocations location, SerializingFormat format)
         {

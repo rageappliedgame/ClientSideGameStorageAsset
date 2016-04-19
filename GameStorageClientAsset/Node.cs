@@ -228,7 +228,7 @@ namespace AssetPackage
                 serializers.Add(typeof(DateTime), new XmlSerializer(typeof(DateTime)));
             }
             sw.Stop();
-            Debug.Print("Elapsed (Caching Serializers): {0} ms", sw.ElapsedMilliseconds);
+            Debug.Print("Elapsed (Caching XmlSerializers): {0} ms", sw.ElapsedMilliseconds);
 
             sw.Reset();
             sw.Start();
@@ -292,7 +292,7 @@ namespace AssetPackage
                 typeMapper.Add("ArrayOfUnsignedByte", typeof(List<byte>));
             }
             sw.Stop();
-            Debug.Print("Elapsed (Caching types): {0} ms", sw.ElapsedMilliseconds);
+            Debug.Print("Elapsed (Caching xml types): {0} ms", sw.ElapsedMilliseconds);
         }
 
         /// <summary>
@@ -1201,7 +1201,7 @@ namespace AssetPackage
         {
             if (!serializers.ContainsKey(type))
             {
-                Debug.Print("Caching Serializer for {0}", type.Name);
+                Debug.Print("Caching XmlSerializer for {0}", type.FullName);
 
                 serializers.Add(type, new XmlSerializer(type));
                 //serializers.Add(type, XmlSerializer.FromTypes(new[] { type })[0]);

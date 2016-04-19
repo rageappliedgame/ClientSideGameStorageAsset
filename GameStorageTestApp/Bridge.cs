@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
- #undef ASYNC
+#undef ASYNC
 //#define ASYNC
 
 namespace UserModel
@@ -524,9 +524,9 @@ namespace UserModel
         /// <returns>
         /// An object.
         /// </returns>
-        public object Deserialize(string text, Type type, SerializingFormat format)
+        public object Deserialize<T>(string text, SerializingFormat format)
         {
-            return JsonConvert.DeserializeObject(text, type);
+            return JsonConvert.DeserializeObject(text, typeof(T));
         }
 
         /// <summary>
