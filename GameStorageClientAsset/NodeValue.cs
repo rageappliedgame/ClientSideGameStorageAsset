@@ -13,6 +13,10 @@
     [Serializable]
     public class NodesPoc
     {
+        public NodesPoc()
+        {
+            nodes = new NodePoc[0];
+        }
         /// <summary>
         /// The nodes.
         /// </summary>
@@ -83,6 +87,11 @@
         /// <value>
         /// The value.
         /// </value>
-        public Object Value;
+        public String Value;
+
+        /// <summary>
+        /// The object value.
+        /// </summary>
+        internal Object ObjectValue;
     }
 }

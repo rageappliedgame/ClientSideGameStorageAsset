@@ -40,6 +40,7 @@
             this.textBox3 = new System.Windows.Forms.TextBox();
             this.btnSaveData = new System.Windows.Forms.Button();
             this.btnFilter = new System.Windows.Forms.Button();
+            this.button1 = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // btnSaveStructure
@@ -165,11 +166,22 @@
             this.btnFilter.UseVisualStyleBackColor = true;
             this.btnFilter.Click += new System.EventHandler(this.btnFilter_Click);
             // 
+            // button1
+            // 
+            this.button1.Location = new System.Drawing.Point(615, 351);
+            this.button1.Name = "button1";
+            this.button1.Size = new System.Drawing.Size(75, 23);
+            this.button1.TabIndex = 12;
+            this.button1.Text = "toXml()";
+            this.button1.UseVisualStyleBackColor = true;
+            this.button1.Click += new System.EventHandler(this.button1_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(702, 618);
+            this.Controls.Add(this.button1);
             this.Controls.Add(this.btnFilter);
             this.Controls.Add(this.btnSaveData);
             this.Controls.Add(this.textBox3);
@@ -204,6 +216,7 @@
         private System.Windows.Forms.TextBox textBox3;
         private System.Windows.Forms.Button btnSaveData;
         private System.Windows.Forms.Button btnFilter;
+        private System.Windows.Forms.Button button1;
     }
 }
 

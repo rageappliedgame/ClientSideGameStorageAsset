@@ -230,11 +230,6 @@ namespace UserModel
 
             if (storage.Connected)
             {
-                if (!storage.Types.ContainsKey(typeof(DemoClass).FullName))
-                {
-                    storage.Types.Add(typeof(DemoClass).FullName, typeof(DemoClass));
-                }
-
                 //{
                 //"nodes": [
                 //                  {
@@ -434,7 +429,13 @@ namespace UserModel
             storage["Test"].Clear();
             storage["Wiki"].Clear();
 
-            #warning todo pretty print generic types?
+            storage.RegisterTypes(new Type[] {
+                typeof(DemoClass),
+                typeof(List<byte>),
+                typeof(List<string>),
+            });
+
+#warning todo pretty print generic types?
 
             // See https://msdn.microsoft.com/en-us/library/windows/apps/system.type.makegenerictype(v=vs.105).aspx
             // See https://msdn.microsoft.com/en-us/library/windows/apps/system.type.getgenerictypedefinition(v=vs.105).aspx
@@ -508,9 +509,16 @@ namespace UserModel
             data.AddRange(new byte[] { 1, 2, 3, 4, 5 });
 
             Node F = root.AddChild("F", "F");
-            Node B = F.AddChild("B", "B");
-            B.AddChild("A", "A");
-            B.Value = data;
+            Node B = F.AddChild("B", data);
+            B.AddChild("A", DateTime.Now);
+
+            for (Int32 i = 0; i < 100; i++)
+            {
+                B.AddChild(String.Format("A{0:000}", i), i);
+            }
+
+            //B.Value = data;
+
             Node D = B.AddChild("D", DateTime.Now, StorageLocations.Server);
             D.AddChild("C", new DemoClass
             {
@@ -639,5 +647,29 @@ namespace UserModel
         }
 
         #endregion Nested Types
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            BuildDemo();
+
+            Stopwatch sw = new Stopwatch();
+            {
+                sw.Reset();
+                sw.Start();
+                storage.SaveData("Wiki", StorageLocations.Local, SerializingFormat.Json);
+                sw.Stop();
+                Debug.Print("JSon serialize Elapsed: {0} ms", sw.ElapsedMilliseconds);
+            }
+            storage["Wiki"]["F"].Value = 42;
+            {
+                sw.Reset();
+                sw.Start();
+                storage.LoadData("Wiki", StorageLocations.Local, SerializingFormat.Json);
+                sw.Stop();
+                Debug.Print("JSon deserialize Elapsed: {0} ms", sw.ElapsedMilliseconds);
+            }
+
+            textBox1.Text = storage["Wiki"].ToXml(false);
+        }
     }
 }
