@@ -511,6 +511,12 @@ namespace UserModel
             Node F = root.AddChild("F", "F");
             Node B = F.AddChild("B", data);
             B.AddChild("A", DateTime.Now);
+            B.AddChild("A1", new DemoClass
+            {
+                a = 15,
+                b = "vijftien",
+                c = DateTime.Now
+            });
 
             for (Int32 i = 0; i < 100; i++)
             {
