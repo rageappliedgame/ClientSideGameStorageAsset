@@ -21,8 +21,10 @@ namespace AssetPackage
     using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.IO;
     using System.Linq;
     using System.Reflection;
+    using System.Runtime.Serialization.Formatters.Binary;
     using System.Text;
     using System.Text.RegularExpressions;
 
@@ -838,7 +840,30 @@ namespace AssetPackage
                 }
                 else if (nt.IsClass && nt.IsSerializable)
                 {
-                    nodePoc.Value.Value = serializer.Serialize(node.Value, format);
+                    //https://msdn.microsoft.com/en-us/library/system.type.makegenerictype%28v=vs.110%29.aspx
+                    //Type helper = typeof(Helper<>);
+                    //Type tmp = helper.MakeGenericType(new Type[] { nt });
+                    //Helper<nt> o = new Helper(node.Value); //(Helper)Activator.CreateInstance(tmp);
+                    //o.Value = node.Value;
+                    //nodePoc.Value.Value = serializer.Serialize(o, format); // was node.Value;
+                    // 
+
+                    //! The problem here is that Unity3D's serializier looks at the type so 
+                    //  won't serialize an Object field, no matter the content.
+
+                    nodePoc.Value.Value = serializer.Serialize(node.Value, format); // was node.Value;
+                    string tmp0 = serializer.Serialize(node, format);
+
+                    IBaseHelper h = new Helper<int>(45);
+                    string tmp1 = serializer.Serialize(h, format);
+
+                    //using (MemoryStream ms = new MemoryStream())
+                    //{
+                    //    new BinaryFormatter().Serialize(ms, node.Value);
+                    //    ms.Flush();
+
+                    //    nodePoc.Value.Value = Convert.ToBase64String(ms.ToArray());
+                    //}
                 }
                 else
                 {
@@ -885,6 +910,21 @@ namespace AssetPackage
             return serialized.ToString();
         }
 
+        public interface IBaseHelper
+        {
+        }
+
+        [Serializable]
+        public struct Helper<T> : IBaseHelper
+        {
+            public Helper(T Value)
+            {
+                this.Value = Value;
+            }
+
+            public T Value;
+        }
+
         /// <summary>
         /// Deserialize this object to the given stream.
         /// </summary>
@@ -897,12 +937,6 @@ namespace AssetPackage
         private void Deserialize(ISerializer serializer, Node root, String data, StorageLocations location, SerializingFormat format)
         {
             NodesPoc nodes = (NodesPoc)serializer.Deserialize<NodesPoc>(data, SerializingFormat.Json);
-
-            //! 0) Get the generic type definition
-            // 
-            //! See http://stackoverflow.com/questions/4667981/c-sharp-use-system-type-as-generic-parameter
-            // 
-            MethodInfo method = serializer.GetType().GetMethod("Deserialize", new Type[] { typeof(String), typeof(SerializingFormat) }/* BindingFlags.Public*/);
 
             //! 1) Enumerate all deserialized nodes.
             // 
@@ -941,13 +975,20 @@ namespace AssetPackage
                 // 
                 if (!nt.FullName.Equals(node.Value.ValueType))
                 {
-                    //! All 
+                    //! All Classes not being a string need a tick in order to use Deserialize<T>() of Unity3D.
+                    //! This because we cannot pass a Type variable as <T>! So we have to construct the method.
+                    // 
                     if (tt.IsClass && tt.IsSerializable && nt.Name.Equals(typeof(String).Name))
                     {
                         //! 4a) Handle classes that are serialized as String.
                         // 
                         //
 #warning Experimental code (String/Object) Test on iOS etc.
+                        //! 0) Get the generic type definition
+                        // 
+                        //! See http://stackoverflow.com/questions/4667981/c-sharp-use-system-type-as-generic-parameter
+                        // 
+                        MethodInfo method = serializer.GetType().GetMethod("Deserialize", new Type[] { typeof(String), typeof(SerializingFormat) }/* BindingFlags.Public*/);
 
                         // Build a method with the specific type argument you're interested in
                         method = method.MakeGenericMethod(tt);
