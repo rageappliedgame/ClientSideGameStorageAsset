@@ -18,6 +18,7 @@
 namespace UserModel
 {
     using System;
+    using System.Linq;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Text.RegularExpressions;
@@ -505,11 +506,15 @@ namespace UserModel
         {
             root.Clear();
 
+            //! Data Still Fails (as it's serialized as an Array).
+            // 
             List<byte> data = new List<byte>();
             data.AddRange(new byte[] { 1, 2, 3, 4, 5 });
-
+            short[] sa = new short[] { 1, 2, 3, 4, 5 };
+            sa.ToList<short>();
             Node F = root.AddChild("F", "F");
-            Node B = F.AddChild("B", data);
+            //Node B = F.AddChild("B", data);
+            Node B = F.AddChild("B", new short[] { 1, 2, 3, 4, 5 });
             B.AddChild("A", DateTime.Now);
             B.AddChild("A1", new DemoClass
             {
@@ -517,11 +522,12 @@ namespace UserModel
                 b = "vijftien",
                 c = DateTime.Now
             });
+            B.AddChild("A2", 42);
 
-            for (Int32 i = 0; i < 100; i++)
-            {
-                B.AddChild(String.Format("A{0:000}", i), i);
-            }
+            //for (Int32 i = 0; i < 100; i++)
+            //{
+            //    B.AddChild(String.Format("A{0:000}", i), i);
+            //}
 
             //B.Value = data;
 
