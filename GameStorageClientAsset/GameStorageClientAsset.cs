@@ -49,6 +49,28 @@ namespace AssetPackage
         private const string TimeFormat = "yyyy-MM-ddTHH:mm:ss.fffZ";
 
         /// <summary>
+        /// The RegEx to extract a JSON Object. Used to extract 'actor'.
+        /// </summary>
+        ///
+        /// <remarks>
+        /// NOTE: This regex handles matching brackets by using balancing groups. This should be tested in Mono if it works there too.<br />
+        /// NOTE: {} brackets must be escaped as {{ and }} for String.Format statements.<br />
+        /// NOTE: \ must be escaped as \\ in strings.<br />
+        /// 
+        /// TEST "Value":(?:\s?)(\{(?>[^{}]+|\{(?<number>)|\}(?<-number>))*(?(number)(?!))\}) (with spaces after the :)
+        /// </remarks>
+        private const string ObjectRegEx =
+            "\"{0}\":(" +                   // {0} is replaced by the proprty name, capture only its value in {} brackets.
+            "\\{{" +                        // Start with a opening brackets.
+            "(?>" +
+            "    [^{{}}]+" +                // Capture each non bracket chracter.
+            "    |    \\{{ (?<number>)" +   // +1 for opening bracket.
+            "    |    \\}} (?<-number>)" +  // -1 for closing bracket.
+            ")*" +
+            "(?(number)(?!))" +             // Handle unaccounted left brackets with a fail.
+            "\\}})"; // Stop at matching bracket.
+
+        /// <summary>
         /// The RegEx to extract a plain quoted JSON Value. Used to extract 'token'.
         /// </summary>
         private const string TokenRegEx = "\"{0}\":\"(.+?)\"";
@@ -77,6 +99,17 @@ namespace AssetPackage
         /// A Regex to extact the message value from JSON.
         /// </summary>
         private Regex jsonMessage = new Regex(String.Format(TokenRegEx, "message"), RegexOptions.Singleline);
+
+        /// <summary>
+        /// The JSON value.
+        /// </summary>
+        private const String jsonValueRegEx = "\"Value\":(?:\\s?)(\\{(?>[^{}]+|\\{(?<number>)|\\}(?<-number>))*(?(number)(?!))\\})";
+
+        private Regex jsonValue = new Regex(jsonValueRegEx, RegexOptions.Singleline | RegexOptions.IgnorePatternWhitespace);
+
+        private const String jsonArrayRegEx = "\"Value\":(?:\\s?)(\\[(?>[^\\[\\]]+|\\[(?<number>)|\\](?<-number>))*(?(number)(?!))\\])";
+
+        private Regex jsonArray = new Regex(jsonArrayRegEx, RegexOptions.Singleline | RegexOptions.IgnorePatternWhitespace);
 
         /// <summary>
         /// Options for controlling the operation.
@@ -424,7 +457,7 @@ namespace AssetPackage
         /// <returns>
         /// The type.
         /// </returns>
-        private Type GetType(String typename)
+        private Type LookuptType(String typename)
         {
             if (!Types.ContainsKey(typename))
             {
@@ -815,28 +848,36 @@ namespace AssetPackage
                 serialized.AppendLine(prefixes[format]);
             }
 
+            Type pocType = typeof(PocValue<>);
+
             //! 2) Enumerate all nodes to be save to the specified location. 
             // 
             foreach (Node node in root.PrefixEnumerator(new List<StorageLocations> { location }))
             {
 #warning TODO: Not optimal location for nodePoc & nt inside the loop, but usefull during debugging.
-
-                NodePoc nodePoc = new NodePoc();
-
-                nodePoc.Path = node.Path.Replace('.', '|');
-
                 Type nt = node.Value.GetType();
+
+                //Type poc = typeof(NodePocOut<>);
+                //BaseNodePoc nodePoc = (BaseNodePoc)Activator.CreateInstance(
+                //    poc.MakeGenericType(nt),
+                //    new object[] { node.Path.Replace('.', '|'), node.Value });
+
+                // String tmp2 = serializer.Serialize(nodePoc, format);
+
+                /*
+                // was node.Value;
+                //nodePoc.Path = node.Path.Replace('.', '|');
 
                 //! 3) If class, it was serialize as string 
                 //!    Note: Structs (other then internally handled internally by the serializer i.e. Guid, DataTime) are not supported yet.
                 //!    Note: Code should be improved (there should be no data in it that is not marker with a [Serializable] attribute).
                 if (node.Value is String)
                 {
-                    nodePoc.Value.Value = node.Value.ToString();
+                    nodePoc.Value = node.Value.ToString();
                 }
                 else if (node.Value is DateTime)
                 {
-                    nodePoc.Value.Value = ((DateTime)(node.Value)).ToString("O");
+                    nodePoc.Value = ((DateTime)(node.Value)).ToString("O");
                 }
                 else if (nt.IsClass && nt.IsSerializable)
                 {
@@ -851,7 +892,7 @@ namespace AssetPackage
                     //! The problem here is that Unity3D's serializier looks at the type so 
                     //  won't serialize an Object field, no matter the content.
 
-                    nodePoc.Value.Value = serializer.Serialize(node.Value, format); // was node.Value;
+                    nodePoc.Value = serializer.Serialize(node.Value, format); // was node.Value;
                     string tmp0 = serializer.Serialize(node, format);
 
                     IBaseHelper h = new Helper<int>(45);
@@ -867,14 +908,123 @@ namespace AssetPackage
                 }
                 else
                 {
-                    nodePoc.Value.Value = node.Value.ToString();
+                    nodePoc.Value = node.Value.ToString();
                 }
 
-                nodePoc.Value.ValueType = node.Value.GetType().FullName;
+                nodePoc.ValueType = node.Value.GetType().FullName;
+                */
 
-                //! 4) Write value.
+                String json = String.Empty;
+
+                IPocValue nodePocs;
+
+                //! 3) Adjust value to a String for Classes (not being a string).
+                // xx
+                if (!(node.Value is String) && nt.IsClass && nt.IsSerializable && !nt.IsArray)
+                {
+                    //! Serialize Classes except Strings.
+                    //
+                    //! Serializes as a Json Class (not a String).
+                    nodePocs = (IPocValue)Activator.CreateInstance(pocType.MakeGenericType(nt));
+                    nodePocs.SetValue(node.Value);
+
+                    //! Serializes as a Json String (not a Class).
+                    //! Ok with Newtonsoft 
+                    //! Fail with Unity3D (won't serialize a value).
+                    //! Could be fixed by manually escaping output of code above.
+                    //nodePocs = new PocValue<String>();
+                    //nodePocs.SetValue(serializer.Serialize(node.Value, format));
+
+                    //"{\r\n  \"a\": 15,\r\n  \"b\": \"vijftien\",\r\n  \"c\": \"2016-04-21T00:05:04.4571539+02:00\"\r\n}",
+                    // versus:
+                    //{
+                    //"a": 15,
+                    //"b": "vijftien",
+                    //"c": "2016-04-21T00:00:33.4479899+02:00"
+                    //}
+                }
+                else if (nt.IsArray)
+                {
+                    //#warning Arrays still fail because they are not enquoted.
+                    //                Type pocType = typeof(PocValue<>);
+                    //                nodePocs = (IPocValue)Activator.CreateInstance(pocType.MakeGenericType(nt));
+                    //                nodePocs.SetValue(node.Value);
+
+                    //! NewtonSoft: Array and other IEnumerables as String.
+                    // 
+                    //nodePocs = new PocValue<String>();
+                    //String tmp = serializer.Serialize((node.Value as IEnumerable), format);
+                    //nodePocs.SetValue(tmp);
+
+                    //! Unity3D Still refuses to serialize arrays etc.
+
+#warning manual escaping (cut it from JsonArray)?
+
+                    //! This code nicely serializes a IEnumerable as Json Array (not ok during de-serialization).
+                    nodePocs = new PocValue<IEnumerable>();
+                    nodePocs.SetValue((node.Value as IEnumerable));
+
+                    //"[\r\n  1,\r\n  2,\r\n  3,\r\n  4,\r\n  5\r\n]"
+                    // versus:
+                    //[1,2,3,4,5]
+                }
+                else if (nt.IsPrimitive)
+                {
+                    //! The primitive types are Boolean, Byte, SByte, Int16, UInt16, Int32, UInt32, Int64, UInt64, IntPtr, UIntPtr, Char, Double, and Single.
+                    // 
+                    nodePocs = new PocValue<String>();
+
+                    nodePocs.SetValue(node.Value.ToString());
+                }
+                else if (node.Value is DateTime)
+                {
+                    nodePocs = new PocValue<String>();
+
+                    nodePocs.SetValue(((DateTime)(node.Value)).ToString("O"));
+                }
+                else
+                {
+                    nodePocs = new PocValue<String>();
+
+                    nodePocs.SetValue(node.Value.ToString());
+                }
+
+                nodePocs.SetPath(node.Path);
+                nodePocs.SetValueType(nt.FullName);
+
+                json = serializer.Serialize(nodePocs, format);
+
+                //! Fixups for classes and arrays.
                 // 
-                serialized.Append(String.Format("{0}", serializer.Serialize(nodePoc, format)));
+                if (jsonValue.IsMatch(json))
+                {
+                    Match m = jsonValue.Match(json);
+
+                    //m.Index, m.Length
+                    String cls = m.Groups[1].Value;
+
+                    cls = cls.Replace("\r", "\\r");
+                    cls = cls.Replace("\n", "\\n");
+                    cls = cls.Replace("\"", "\\\"");
+
+                    json = json.Remove(m.Index, m.Length);
+                    json = json.Insert(m.Index, String.Format("\"Value\": \"{0}\"", cls));
+                }
+                else if (jsonArray.IsMatch(json))
+                {
+                    Match m = jsonArray.Match(json);
+
+                    //m.Index, m.Length
+                    String cls = m.Groups[1].Value;
+
+                    cls = cls.Replace("\r", "\\r");
+                    cls = cls.Replace("\n", "\\n");
+                    cls = cls.Replace("\"", "\\\"");
+
+                    json = json.Remove(m.Index, m.Length);
+                    json = json.Insert(m.Index, String.Format("\"Value\": \"{0}\"", cls));
+                }
+                serialized.Append(String.Format("{0}", json));
 
                 //! 5) Write separator if any.
                 // 
@@ -910,20 +1060,20 @@ namespace AssetPackage
             return serialized.ToString();
         }
 
-        public interface IBaseHelper
-        {
-        }
+        //public interface IBaseHelper
+        //{
+        //}
 
-        [Serializable]
-        public struct Helper<T> : IBaseHelper
-        {
-            public Helper(T Value)
-            {
-                this.Value = Value;
-            }
+        //[Serializable]
+        //public struct Helper<T> : IBaseHelper
+        //{
+        //    public Helper(T Value)
+        //    {
+        //        this.Value = Value;
+        //    }
 
-            public T Value;
-        }
+        //    public T Value;
+        //}
 
         /// <summary>
         /// Deserialize this object to the given stream.
@@ -936,13 +1086,19 @@ namespace AssetPackage
         /// <param name="format">     Describes the format to use. </param>
         private void Deserialize(ISerializer serializer, Node root, String data, StorageLocations location, SerializingFormat format)
         {
-            NodesPoc nodes = (NodesPoc)serializer.Deserialize<NodesPoc>(data, SerializingFormat.Json);
+            PocStringValues pv = new PocStringValues();
+            pv.nodes = new PocStringValue[] { new PocStringValue { Path = "aa", Value = "bb", ValueType = "cc" } };
+            String test = serializer.Serialize(pv, SerializingFormat.Json);
+
+            PocStringValues nodes1 = (PocStringValues)serializer.Deserialize<PocStringValues>(data, SerializingFormat.Json);
+
+           // PocValues nodes = (PocValues)serializer.Deserialize<PocValues>(data, SerializingFormat.Json);
 
             //! 1) Enumerate all deserialized nodes.
             // 
-            for (Int32 i = 0; i < nodes.nodes.Length; i++)
+            for (Int32 i = 0; i < nodes1.nodes.Length; i++)
             {
-                NodePoc node = nodes.nodes[i];
+                PocStringValue poc = nodes1.nodes[i];
 
                 //! 2) Problem, in Unity all serialized Value.Value's are empty (probably due to the object type in nodepoc).
                 //!             so we now use 2 fields, Value for serializing and object for deserializing.
@@ -958,73 +1114,119 @@ namespace AssetPackage
 
                 //! 3) Check if type was registered.
                 // 
-                Type nt = node.Value.Value.GetType();
-                Type tt = GetType(node.Value.ValueType);
+                //Type nt = node.Value.GetType();
+                Type tt = LookuptType(poc.ValueType);
 
                 // This does not change the node in nodes.
                 // 
-                node.Path = node.Path.Replace('|', '.');
+                poc.Path = poc.Path.Replace('|', '.');
 
-                //Debug.Print("Path: {0}", node.Path);
-                //Debug.Print("Expected Type: {0}", node.Value.ValueType);
-                //Debug.Print("Deserialized Type: {0}", nt.FullName);
+                // The "null" is because it's a static method
+                BaseNodePoc fixedpoc = new BaseNodePoc();
 
-                //! 3) If Serializable Class, it was serialized as String. Correct type if neccesary.
-                //!    Note: Structs (other then internally handled internally by the serializer i.e. Guid, DataTime) are not supported yet.
-                //!    Note: The test for strucst (nt.IsValueType && !nt.IsEnum) also returns true for DataTime and Guid which are structs handled by serializers.
-                // 
-                if (!nt.FullName.Equals(node.Value.ValueType))
+                if (poc.Value.ToString().StartsWith("{"))
                 {
-                    //! All Classes not being a string need a tick in order to use Deserialize<T>() of Unity3D.
-                    //! This because we cannot pass a Type variable as <T>! So we have to construct the method.
-                    // 
-                    if (tt.IsClass && tt.IsSerializable && nt.Name.Equals(typeof(String).Name))
-                    {
-                        //! 4a) Handle classes that are serialized as String.
-                        // 
-                        //
-#warning Experimental code (String/Object) Test on iOS etc.
-                        //! 0) Get the generic type definition
-                        // 
-                        //! See http://stackoverflow.com/questions/4667981/c-sharp-use-system-type-as-generic-parameter
-                        // 
-                        MethodInfo method = serializer.GetType().GetMethod("Deserialize", new Type[] { typeof(String), typeof(SerializingFormat) }/* BindingFlags.Public*/);
+                    //! Create a Generic Class to Serialize the Value into.
+                    Type pocType = typeof(NodePocIn<>);
+                    BaseNodePoc nodePoc = (BaseNodePoc)Activator.CreateInstance(pocType.MakeGenericType(tt), new object[] { poc.Path.Replace('.', '|'), poc.Value });
 
-                        // Build a method with the specific type argument you're interested in
-                        method = method.MakeGenericMethod(tt);
-                        // The "null" is because it's a static method
-                        nodes.nodes[i].Value.ObjectValue = method.Invoke(serializer, new Object[] { node.Value.Value.ToString(), format });
+                    //! Create a Generic Method to call the Deserializer.
+                    MethodInfo method = serializer.GetType().GetMethod("Deserialize", new Type[] { typeof(String), typeof(SerializingFormat) });
+                    method = method.MakeGenericMethod(LookuptType(nodePoc.ValueType));
 
-                        //! Deserialize<tt> fails because of the generic parameter. By passing it twice (as generic/parameter the compiler can deduce it).
-                        //    
-                        // nodes.nodes[i].Value.Value = (tt)serializer.Deserialize<tt>(node.Value.Value.ToString(), format);
-                    }
-                    else
-                    {
-                        //! 4b) Handle smaller type mismatches like a Byte 5 being turned into a Int64 by NewtonSoft.
-                        // 
-                        nodes.nodes[i].Value.ObjectValue = Convert.ChangeType(node.Value.Value, tt);
-                    }
+                    //! Deserialize the Value.
+                    fixedpoc.ValueAsObject = method.Invoke(serializer, new Object[] { poc.Value, format });
+                }
+                else if (poc.Value.ToString().StartsWith("["))
+                {
+                    //! Create a Generic Class to Serialize the Value into.
+                    Type pocType = typeof(PocValue<>);
+                    IPocValue nodePoc = (IPocValue)Activator.CreateInstance(pocType.MakeGenericType(tt));
+
+                    //! Create a Generic Method to call the Deserializer.
+                    MethodInfo method = serializer.GetType().GetMethod("Deserialize", new Type[] { typeof(String), typeof(SerializingFormat) });
+                    method = method.MakeGenericMethod(nodePoc.GetType());
+
+                    //! Deserialize into the Generic Class and extract the Value.
+                    String s = String.Format("{{ \"Value\": {0} }}", poc.Value);
+                    nodePoc = (IPocValue)method.Invoke(serializer, new Object[] { s, format });
+                    fixedpoc.ValueAsObject = nodePoc.GetValue();
                 }
                 else
                 {
-                    nodes.nodes[i].Value.ObjectValue = Convert.ChangeType(node.Value.Value, tt);
+                    //! Fallback is using Convert.ChangeType (for Primitive types for example).
+                    fixedpoc.ValueAsObject = Convert.ChangeType(poc.Value, tt);
                 }
 
-                //Debug.Print("Final (corrected) Type: {0}", nodes.nodes[i].Value.Value.GetType().FullName);
+                //! Update Tree by path (not very optimized yet).
+                // 
+                Node n = root.PrefixEnumerator(new List<StorageLocations> { location }).FirstOrDefault(p => p.Path.Equals(poc.Path));
+                if (n != null)
+                {
+                    n.Value = fixedpoc.ValueAsObject;
+                }
+
+                /*
+                                //Debug.Print("Path: {0}", node.Path);
+                                //Debug.Print("Expected Type: {0}", node.Value.ValueType);
+                                //Debug.Print("Deserialized Type: {0}", nt.FullName);
+
+                                //! 3) If Serializable Class, it was serialized as String. Correct type if neccesary.
+                                //!    Note: Structs (other then internally handled internally by the serializer i.e. Guid, DataTime) are not supported yet.
+                                //!    Note: The test for strucst (nt.IsValueType && !nt.IsEnum) also returns true for DataTime and Guid which are structs handled by serializers.
+                                // 
+                                if (!nt.FullName.Equals(node.ValueType))
+                                {
+                                    //! All Classes not being a string need a tick in order to use Deserialize<T>() of Unity3D.
+                                    //! This because we cannot pass a Type variable as <T>! So we have to construct the method.
+                                    // 
+                                    if (tt.IsClass && tt.IsSerializable && nt.Name.Equals(typeof(String).Name))
+                                    {
+                                        //! 4a) Handle classes that are serialized as String.
+                                        // 
+                                        //
+                #warning Experimental code (String/Object) Test on iOS etc.
+                                        //! 0) Get the generic type definition
+                                        // 
+                                        //! See http://stackoverflow.com/questions/4667981/c-sharp-use-system-type-as-generic-parameter
+                                        // 
+                                        MethodInfo method = serializer.GetType().GetMethod("Deserialize", new Type[] { typeof(String), typeof(SerializingFormat) });
+
+                            // Build a method with the specific type argument you're interested in
+                            method = method.MakeGenericMethod(tt);
+                            // The "null" is because it's a static method
+                            nodes.nodes[i].Value = method.Invoke(serializer, new Object[] { node.Value.ToString(), format });
+
+                            //! Deserialize<tt> fails because of the generic parameter. By passing it twice (as generic/parameter the compiler can deduce it).
+                            //    
+                            // nodes.nodes[i].Value.Value = (tt)serializer.Deserialize<tt>(node.Value.Value.ToString(), format);
+                        }
+                                    else
+                                    {
+                                        //! 4b) Handle smaller type mismatches like a Byte 5 being turned into a Int64 by NewtonSoft.
+                                        // 
+                                        nodes.nodes[i].ObjectValue = Convert.ChangeType(node.Value, tt);
+                                    }
+                }
+                                else
+                                {
+                                    nodes.nodes[i].ObjectValue = Convert.ChangeType(node.Value, tt);
+                                }
+                                //Debug.Print("Final (corrected) Type: {0}", nodes.nodes[i].Value.Value.GetType().FullName);
+                */
             }
 
             //! 5) Rebuild tree.
-            foreach (Node node in root.PrefixEnumerator(new List<StorageLocations> { location }))
-            {
-                //! Note the separator differs.
-                NodePoc np = nodes.nodes.FirstOrDefault(p => p.Path.Equals(node.Path));
-                if (np != null)
-                {
-                    //! Alternative: Search path in Tree and alter there.
-                    node.Value = np.Value.ObjectValue;
-                }
-            }
+            //foreach (Node node in root.PrefixEnumerator(new List<StorageLocations> { location }))
+            //{
+            //    //! Note the separator differs.
+            //    BaseNodePoc np = nodes.poc.FirstOrDefault(p => p.Path.Equals(node.Path));
+            //    if (np != null)
+            //    {
+            //        //! Alternative: Search path in Tree and alter there.
+            //        node.Value = np.ValueAsObject;
+            //    }
+            //}
         }
 
         //public object DeserializeHelper<T>(ISerializer serializer, string value, T type)
