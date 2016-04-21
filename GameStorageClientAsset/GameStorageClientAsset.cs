@@ -848,7 +848,7 @@ namespace AssetPackage
                 serialized.AppendLine(prefixes[format]);
             }
 
-            Type pocType = typeof(PocValue<>);
+            Type pocValueType = typeof(PocValue<>);
 
             //! 2) Enumerate all nodes to be save to the specified location. 
             // 
@@ -925,7 +925,7 @@ namespace AssetPackage
                     //! Serialize Classes except Strings.
                     //
                     //! Serializes as a Json Class (not a String).
-                    nodePocs = (IPocValue)Activator.CreateInstance(pocType.MakeGenericType(nt));
+                    nodePocs = (IPocValue)Activator.CreateInstance(pocValueType.MakeGenericType(nt));
                     nodePocs.SetValue(node.Value);
 
                     //! Serializes as a Json String (not a Class).
@@ -936,7 +936,9 @@ namespace AssetPackage
                     //nodePocs.SetValue(serializer.Serialize(node.Value, format));
 
                     //"{\r\n  \"a\": 15,\r\n  \"b\": \"vijftien\",\r\n  \"c\": \"2016-04-21T00:05:04.4571539+02:00\"\r\n}",
-                    // versus:
+                    // 
+                    //! versus:
+                    // 
                     //{
                     //"a": 15,
                     //"b": "vijftien",
@@ -945,10 +947,56 @@ namespace AssetPackage
                 }
                 else if (nt.IsArray)
                 {
-                    //#warning Arrays still fail because they are not enquoted.
-                    //                Type pocType = typeof(PocValue<>);
-                    //                nodePocs = (IPocValue)Activator.CreateInstance(pocType.MakeGenericType(nt));
-                    //                nodePocs.SetValue(node.Value);
+                    //! warning Arrays still fail because they are not enquoted.
+                    //! Unity23D also refuses to serialize them (does only List<T>). 
+                    //! So we need to convert.
+                    //  
+                    //Type type = typeof(PocValue<>);
+
+                    Type enumType = typeof(List<>).MakeGenericType(new Type[] { nt.GetElementType() });
+
+                    //MethodInfo[] mis = typeof(IEnumerable<int>).GetMethods(BindingFlags.Static | BindingFlags.Public);
+
+                    //Object z = (node.Value as IEnumerable).Cast<short>();
+
+                    typeof(Enumerable).GetMethods();
+
+                    //MethodInfo methodInfo = typeof(Enumerable).GetMethods(BindingFlags.Static | BindingFlags.Public).First(m => m.Name.Equals("Cast"));
+
+                    MethodInfo methodInfo = typeof(Enumerable).GetMethod("ToList");
+                    MethodInfo method = methodInfo.MakeGenericMethod(new Type[] { nt.GetElementType() });
+
+                    Object y = method.Invoke(null, new Object[] { node.Value });
+
+                    //short[] xx = (node.Value as IEnumerable).Cast<short>().ToArray(); ;
+                    //List<short> lx = xx.ToList();
+
+                    Type listType = typeof(List<>).MakeGenericType(new Type[] { nt.GetElementType() });
+                    IPocValue listValue = (IPocValue)Activator.CreateInstance(pocValueType.MakeGenericType(nt.GetElementType()));
+                    //nodePocs1.SetValue(node.Value);
+
+                    //List<object> ooo = new List<object>(); //(node.Value as IEnumerable<object>).Cast<object>().ToList();
+
+                    //IEnumerable e = node.Value as IEnumerable;
+                    //foreach (object oo in node.Value as IEnumerable)
+                    //{
+                    //    ooo.Add(oo);
+                    //}
+
+                    //(node.Value as IEnumerable<short>).ToList<short>()
+
+                    //! Cast Exception m IConvertable:. Object oo = Convert.ChangeType(node.Value, enumType);
+                    //Type listType = typeof(List<>)MakeGenericType(new Type[] { nt.GetElementType() });
+                    nodePocs = (IPocValue)Activator.CreateInstance(pocValueType.MakeGenericType(listType));
+                    nodePocs.SetValue(y);
+
+                    //MethodInfo methodInfo = listType.GetMethod("AddRange", new Type[] { nt });
+
+                    //MethodInfo method = methodInfo.MakeGenericMethod(new Type[] { nt.GetElementType() });
+
+                    //nodePocs.SetValue(method.Invoke(nodePocs1.GetValue(), new Object[] { }));
+
+                    //    Object o = methodInfo.Invoke(listValue, new Object[] { node.Value });
 
                     //! NewtonSoft: Array and other IEnumerables as String.
                     // 
@@ -959,10 +1007,22 @@ namespace AssetPackage
                     //! Unity3D Still refuses to serialize arrays etc.
 
 #warning manual escaping (cut it from JsonArray)?
+                    //Type enumerableType = typeof(IEnumerable<>).MakeGenericType(new Type[] { nt.GetElementType() });
 
-                    //! This code nicely serializes a IEnumerable as Json Array (not ok during de-serialization).
-                    nodePocs = new PocValue<IEnumerable>();
-                    nodePocs.SetValue((node.Value as IEnumerable));
+                    //MethodInfo method = serializer.GetType().GetMethod("Deserialize", new Type[] { typeof(String), typeof(SerializingFormat) });
+                    //method = method.MakeGenericMethod(enumerableType);
+
+                    //MethodInfo methodInfo = enumerableType.GetMethod("ToList", System.Reflection.BindingFlags.Static | BindingFlags.Public);
+                    //// Binding the method info to generic arguments   
+                    //MethodInfo method = methodInfo.MakeGenericMethod(new Type[] { nt.GetElementType() });
+
+                    //int[] x = new int[] { 15 };
+                    //List<int> y = x.Cast<int>().ToList();
+
+                    ////! This code nicely serializes a IEnumerable as Json Array (not ok during de-serialization).
+                    //nodePocs = new PocValue<IEnumerable>();
+                    //nodePocs.SetValue(method.Invoke(null, new Object[] { node.Value }));
+                    //nodePocs.SetValue(o);
 
                     //"[\r\n  1,\r\n  2,\r\n  3,\r\n  4,\r\n  5\r\n]"
                     // versus:
@@ -1092,7 +1152,7 @@ namespace AssetPackage
 
             PocStringValues nodes1 = (PocStringValues)serializer.Deserialize<PocStringValues>(data, SerializingFormat.Json);
 
-           // PocValues nodes = (PocValues)serializer.Deserialize<PocValues>(data, SerializingFormat.Json);
+            // PocValues nodes = (PocValues)serializer.Deserialize<PocValues>(data, SerializingFormat.Json);
 
             //! 1) Enumerate all deserialized nodes.
             // 
