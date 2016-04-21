@@ -672,6 +672,9 @@ namespace UserModel
                 sw.Stop();
                 Debug.Print("JSon serialize Elapsed: {0} ms", sw.ElapsedMilliseconds);
             }
+
+            textBox1.Text = storage["Wiki"].ToXml(false);
+
             storage["Wiki"]["F"].Value = 42;
             {
                 sw.Reset();
@@ -681,7 +684,7 @@ namespace UserModel
                 Debug.Print("JSon deserialize Elapsed: {0} ms", sw.ElapsedMilliseconds);
             }
 
-            textBox1.Text = storage["Wiki"].ToXml(false);
+            textBox2.Text = storage["Wiki"].ToXml(false);
         }
     }
 }

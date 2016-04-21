@@ -41,11 +41,15 @@
             this.btnSaveData = new System.Windows.Forms.Button();
             this.btnFilter = new System.Windows.Forms.Button();
             this.button1 = new System.Windows.Forms.Button();
+            this.splitContainer1 = new System.Windows.Forms.SplitContainer();
+            this.splitContainer1.Panel1.SuspendLayout();
+            this.splitContainer1.Panel2.SuspendLayout();
+            this.splitContainer1.SuspendLayout();
             this.SuspendLayout();
             // 
             // btnSaveStructure
             // 
-            this.btnSaveStructure.Location = new System.Drawing.Point(615, 407);
+            this.btnSaveStructure.Location = new System.Drawing.Point(616, 380);
             this.btnSaveStructure.Name = "btnSaveStructure";
             this.btnSaveStructure.Size = new System.Drawing.Size(75, 23);
             this.btnSaveStructure.TabIndex = 0;
@@ -55,18 +59,17 @@
             // 
             // textBox1
             // 
-            this.textBox1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-            this.textBox1.Location = new System.Drawing.Point(13, 13);
+            this.textBox1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.textBox1.Location = new System.Drawing.Point(0, 0);
             this.textBox1.Multiline = true;
             this.textBox1.Name = "textBox1";
             this.textBox1.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.textBox1.Size = new System.Drawing.Size(381, 334);
+            this.textBox1.Size = new System.Drawing.Size(350, 333);
             this.textBox1.TabIndex = 1;
             // 
             // btnLoadStructure
             // 
-            this.btnLoadStructure.Location = new System.Drawing.Point(615, 380);
+            this.btnLoadStructure.Location = new System.Drawing.Point(616, 353);
             this.btnLoadStructure.Name = "btnLoadStructure";
             this.btnLoadStructure.Size = new System.Drawing.Size(75, 23);
             this.btnLoadStructure.TabIndex = 2;
@@ -106,12 +109,12 @@
             // 
             // textBox2
             // 
-            this.textBox2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.textBox2.Location = new System.Drawing.Point(411, 12);
+            this.textBox2.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.textBox2.Location = new System.Drawing.Point(0, 0);
             this.textBox2.Multiline = true;
             this.textBox2.Name = "textBox2";
             this.textBox2.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.textBox2.Size = new System.Drawing.Size(279, 335);
+            this.textBox2.Size = new System.Drawing.Size(353, 333);
             this.textBox2.TabIndex = 6;
             // 
             // btnConnect
@@ -143,7 +146,7 @@
             this.textBox3.Multiline = true;
             this.textBox3.Name = "textBox3";
             this.textBox3.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.textBox3.Size = new System.Drawing.Size(597, 180);
+            this.textBox3.Size = new System.Drawing.Size(627, 180);
             this.textBox3.TabIndex = 9;
             // 
             // btnSaveData
@@ -168,35 +171,57 @@
             // 
             // button1
             // 
-            this.button1.Location = new System.Drawing.Point(615, 351);
+            this.button1.Location = new System.Drawing.Point(535, 351);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(75, 23);
             this.button1.TabIndex = 12;
-            this.button1.Text = "toXml()";
+            this.button1.Text = "toJson()";
             this.button1.UseVisualStyleBackColor = true;
             this.button1.Click += new System.EventHandler(this.button1_Click);
+            // 
+            // splitContainer1
+            // 
+            this.splitContainer1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.splitContainer1.Location = new System.Drawing.Point(13, 12);
+            this.splitContainer1.Name = "splitContainer1";
+            // 
+            // splitContainer1.Panel1
+            // 
+            this.splitContainer1.Panel1.Controls.Add(this.textBox1);
+            // 
+            // splitContainer1.Panel2
+            // 
+            this.splitContainer1.Panel2.Controls.Add(this.textBox2);
+            this.splitContainer1.Size = new System.Drawing.Size(707, 333);
+            this.splitContainer1.SplitterDistance = 350;
+            this.splitContainer1.TabIndex = 13;
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(702, 618);
+            this.ClientSize = new System.Drawing.Size(732, 618);
+            this.Controls.Add(this.splitContainer1);
             this.Controls.Add(this.button1);
             this.Controls.Add(this.btnFilter);
             this.Controls.Add(this.btnSaveData);
             this.Controls.Add(this.textBox3);
             this.Controls.Add(this.btnSaveLoadStructure);
             this.Controls.Add(this.btnConnect);
-            this.Controls.Add(this.textBox2);
             this.Controls.Add(this.btnBinarySaveLoad);
             this.Controls.Add(this.btnLoadData);
             this.Controls.Add(this.btnVirtual);
             this.Controls.Add(this.btnLoadStructure);
-            this.Controls.Add(this.textBox1);
             this.Controls.Add(this.btnSaveStructure);
             this.Name = "Form1";
             this.SizeGripStyle = System.Windows.Forms.SizeGripStyle.Show;
             this.Text = "GameStorage Client Tester";
+            this.splitContainer1.Panel1.ResumeLayout(false);
+            this.splitContainer1.Panel1.PerformLayout();
+            this.splitContainer1.Panel2.ResumeLayout(false);
+            this.splitContainer1.Panel2.PerformLayout();
+            this.splitContainer1.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -217,6 +242,7 @@
         private System.Windows.Forms.Button btnSaveData;
         private System.Windows.Forms.Button btnFilter;
         private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.SplitContainer splitContainer1;
     }
 }
 
