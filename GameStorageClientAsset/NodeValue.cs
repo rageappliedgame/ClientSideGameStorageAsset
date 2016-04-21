@@ -1,112 +1,27 @@
-﻿namespace AssetPackage
+﻿/*
+ * Copyright 2016 Open University of the Netherlands
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * This project has received funding from the European Union’s Horizon
+ * 2020 research and innovation programme under grant agreement No 644187.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+namespace AssetPackage
 {
     using System;
-    using System.Collections.Generic;
-    public class BaseNodePoc
-    {
-        public String Path;
-        public String ValueType;
-
-        public String Value;
-
-        internal Object ValueAsObject;
-    }
 
     /// <summary>
-    /// (Serializable)nodes  'Plain Old Class', used for building an array of
-    /// (de)serialized values.
+    /// Interface for poc value classes.
     /// </summary>
-    ///
-    /// <remarks>
-    /// No properties as Unity3D will, also case sensitive.
-    /// </remarks>
-    //[Serializable]
-    //public class NodesPocOut
-    //{
-    //    /// <summary>
-    //    /// Initializes a new instance of the AssetPackage.NodesPocOut class.
-    //    /// </summary>
-    //    public NodesPocOut()
-    //    {
-    //        nodes = new NodePocOut<Object>[0];
-    //    }
-
-    //    /// <summary>
-    //    /// The nodes.
-    //    /// </summary>
-    //    public NodePocOut<Object>[] nodes;
-    //}
-
-    [Serializable]
-    public class NodesPocIn
-    {
-        /// <summary>
-        /// Initializes a new instance of the AssetPackage.NodesPocIn class.
-        /// </summary>
-        public NodesPocIn()
-        {
-            nodes = new NodePocIn<String>[0];
-        }
-
-        /// <summary>
-        /// The nodes.
-        /// </summary>
-        public NodePocIn<String>[] nodes;
-    }
-
-    /// <summary>
-    /// (Serializable)A node 'Plain Old Class'.
-    /// </summary>
-    ///
-    /// <remarks>
-    /// No properties as Unity3D will, also case sensitive.
-    /// </remarks>
-    //[Serializable]
-    //public class NodePocOut<T> : BaseNodePoc
-    //{
-    //    /// <summary>
-    //    /// Initializes a new instance of the AssetPackage.NodePoc&lt;T&gt; class.
-    //    /// </summary>
-    //    ///
-    //    /// <param name="Path">  Full pathname of the file. </param>
-    //    /// <param name="Value"> The value. </param>
-    //    public NodePocOut(String Path, T Value)
-    //    {
-    //        this.Path = Path;
-    //        ValueType = typeof(T).FullName;
-    //        this.Value = Value;
-    //    }
-
-    //    public new T Value;
-    //}
-
-    /// <summary>
-    /// (Serializable)A node 'Plain Old Class'.
-    /// </summary>
-    ///
-    /// <remarks>
-    /// No properties as Unity3D will, also case sensitive.
-    /// </remarks>
-    [Serializable]
-    public class NodePocIn<T> : BaseNodePoc
-    {
-        /// <summary>
-        /// Initializes a new instance of the AssetPackage.NodePoc&lt;T&gt; class.
-        /// </summary>
-        ///
-        /// <param name="Path">  Full pathname of the file. </param>
-        /// <param name="Value"> The value. </param>
-        public NodePocIn(String Path, String Value)
-        {
-            this.Path = Path;
-            ValueType = typeof(T).FullName;
-            this.Value = Value.ToString();
-            this.ValueAsObject = default(T);
-        }
-
-        public new T ValueAsObject;
-    }
-
     public interface IPocValue
     {
         Object GetValue();
@@ -119,6 +34,10 @@
         void SetValueType(String Path);
     }
 
+    /// <summary>
+    /// (Serializable)a poc string values. Used to deserialize the Json nodes
+    /// Array as all Values are encoded as string.
+    /// </summary>
     [Serializable]
     public class PocStringValues
     {
@@ -130,6 +49,9 @@
         public PocStringValue[] nodes;
     }
 
+    /// <summary>
+    /// (Serializable)a poc string value.
+    /// </summary>
     [Serializable]
     public class PocStringValue
     {
@@ -138,17 +60,20 @@
         public String ValueType;
     }
 
-    [Serializable]
-    public class PocValues
+    /// <summary>
+    /// A poc object value with an additional object to store deserialzied values.
+    /// </summary>
+    public class PocObjectValue : PocStringValue
     {
-        public PocValues()
-        {
-            nodes = new IPocValue[0];
-        }
-
-        public IPocValue[] nodes;
+        internal Object ValueAsObject;
     }
 
+    /// <summary>
+    /// (Serializable)a poc value. It is used druing deserialization of Json to
+    /// cast values dynamically.
+    /// </summary>
+    ///
+    /// <typeparam name="T"> Generic type parameter. </typeparam>
     [Serializable]
     public class PocValue<T> : IPocValue
     {
