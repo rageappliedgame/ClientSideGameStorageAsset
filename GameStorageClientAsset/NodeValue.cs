@@ -38,7 +38,10 @@ namespace AssetPackage
     /// (Serializable)a poc string values. Used to deserialize the Json nodes
     /// Array as all Values are encoded as string.
     /// </summary>
+#if PORTABLE
+#else
     [Serializable]
+#endif
     public class PocStringValues
     {
         public PocStringValues()
@@ -52,7 +55,10 @@ namespace AssetPackage
     /// <summary>
     /// (Serializable)a poc string value.
     /// </summary>
+#if PORTABLE
+#else
     [Serializable]
+#endif
     public class PocStringValue
     {
         public String Value;
@@ -74,7 +80,10 @@ namespace AssetPackage
     /// </summary>
     ///
     /// <typeparam name="T"> Generic type parameter. </typeparam>
+#if PORTABLE
+#else
     [Serializable]
+#endif
     public class PocValue<T> : IPocValue
     {
         public T Value;

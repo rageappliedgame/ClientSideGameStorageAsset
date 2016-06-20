@@ -4,12 +4,12 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{185E216F-BA71-4B8B-AD31-CE34B4034CCD}</ProjectGuid>
+    <ProjectGuid>{758D439B-9303-45A6-950E-75835FA0974B}</ProjectGuid>
     <OutputType>WinExe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>UserModel</RootNamespace>
     <AssemblyName>UserModel</AssemblyName>
-    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
   </PropertyGroup>
@@ -19,7 +19,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>TRACE;DEBUG;ASYNC</DefineConstants>
+    <DefineConstants>TRACE;DEBUG;ASYNC, PORTABLE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
@@ -36,7 +36,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Newtonsoft.Json, Version=8.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\packages\Newtonsoft.Json.8.0.2\lib\net35\Newtonsoft.Json.dll</HintPath>
+      <HintPath>..\packages\Newtonsoft.Json.8.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />
@@ -85,13 +85,13 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\AssetManager\RageAssetManager\RageAssetManager.csproj">
-      <Project>{da8e9056-2e52-4029-81eb-a2d167614c47}</Project>
-      <Name>RageAssetManager</Name>
+    <ProjectReference Include="..\..\AssetManager\RageAssetManager_Portable\RageAssetManager - Portable.csproj">
+      <Project>{7f2712c1-575c-4883-88aa-e5b31070354f}</Project>
+      <Name>RageAssetManager - Portable</Name>
     </ProjectReference>
-    <ProjectReference Include="..\GameStorageClientAsset\GameStorageClientAsset.csproj">
-      <Project>{cd230d3e-002d-4d8d-abb2-7c1891c18859}</Project>
-      <Name>GameStorageClientAsset</Name>
+    <ProjectReference Include="..\GameStorageClientAsset_Portable\GameStorageClientAsset_Portable.csproj">
+      <Project>{a441fee9-482a-418e-b046-795b2233b910}</Project>
+      <Name>GameStorageClientAsset_Portable</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
