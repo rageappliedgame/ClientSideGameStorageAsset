@@ -712,34 +712,4 @@
 
         #endregion Methods
     }
-
-    /// <summary>
-    /// A string writer utf-8.
-    /// </summary>
-    ///
-    /// <remarks>
-    /// Fix-up for XDocument Serialization defaulting to utf-16.
-    /// </remarks>
-    internal class StringWriterUtf8 : StringWriter
-    {
-        #region Properties
-
-        /// <summary>
-        /// Gets the <see cref="T:System.Text.Encoding" /> in which the output is
-        /// written.
-        /// </summary>
-        ///
-        /// <value>
-        /// The Encoding in which the output is written.
-        /// </value>
-        public override Encoding Encoding
-        {
-            get
-            {
-                return Encoding.UTF8;
-            }
-        }
-
-        #endregion Properties
-    }
 }

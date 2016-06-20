@@ -18,7 +18,8 @@
 namespace AssetPackage
 {
     using System;
-
+    using System.Xml;
+    using System.Xml.Serialization;
     /// <summary>
     /// Interface for poc value classes.
     /// </summary>
@@ -34,14 +35,19 @@ namespace AssetPackage
         void SetValueType(String Path);
     }
 
-    /// <summary>
-    /// (Serializable)a poc string values. Used to deserialize the Json nodes
-    /// Array as all Values are encoded as string.
-    /// </summary>
 #if PORTABLE
 #else
     [Serializable]
 #endif
+
+    /// <summary>
+    /// (Serializable)a poc string values. Used to deserialize the Json nodes
+    /// Array as all Values are encoded as string.
+    /// </summary>
+    ///
+    /// <remarks>
+    /// For Unity3D's Json Serializer only fields are allowed (so no properties).
+    /// </remarks>
     public class PocStringValues
     {
         public PocStringValues()
@@ -52,13 +58,18 @@ namespace AssetPackage
         public PocStringValue[] nodes;
     }
 
-    /// <summary>
-    /// (Serializable)a poc string value.
-    /// </summary>
 #if PORTABLE
 #else
     [Serializable]
 #endif
+
+    /// <summary>
+    /// (Serializable)a poc string value.
+    /// </summary>
+    ///
+    /// <remarks>
+    /// For Unity3D's Json Serializer only fields are allowed (so no properties).
+    /// </remarks>
     public class PocStringValue
     {
         public String Value;
@@ -74,16 +85,22 @@ namespace AssetPackage
         internal Object ValueAsObject;
     }
 
+#if PORTABLE
+#else
+    [Serializable]
+#endif
+
     /// <summary>
     /// (Serializable)a poc value. It is used druing deserialization of Json to
     /// cast values dynamically.
     /// </summary>
     ///
+    /// <remarks>
+    /// For Unity3D's Json Serializer only fields are allowed (so no properties).
+    /// </remarks>
+    ///
     /// <typeparam name="T"> Generic type parameter. </typeparam>
-#if PORTABLE
-#else
-    [Serializable]
-#endif
+    [XmlRoot("PocStringValue")]
     public class PocValue<T> : IPocValue
     {
         public T Value;
