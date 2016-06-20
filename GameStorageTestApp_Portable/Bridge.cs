@@ -42,7 +42,7 @@ namespace UserModel
     using Newtonsoft;
     using AssetPackage;
     using Newtonsoft.Json;
-    class Bridge : IBridge, IVirtualProperties, IDataStorage, /*IWebServiceRequestAsync, */IWebServiceRequest, ILog, ISerializer
+    class Bridge : IBridge, IVirtualProperties, IDataStorage, /*IWebServiceRequest, */IWebServiceRequest, ILog, ISerializer
     {
         readonly String StorageDir = String.Format(@".{0}DataStorage", Path.DirectorySeparatorChar);
 
@@ -139,7 +139,7 @@ namespace UserModel
 
         #endregion
 
-        #region IWebServiceRequestAsync Members
+        #region IWebServiceRequest Members
         /*
 
  #if ASYNC
@@ -286,7 +286,7 @@ namespace UserModel
              }
          }
  */
-        #endregion IWebServiceRequestAsync Members
+        #endregion IWebServiceRequest Members
 
         #region ILog Members
 
@@ -386,7 +386,7 @@ namespace UserModel
         /// Web service request.
         /// </summary>
         ///
-        /// <param name="requestSettings">Options for controlling the operation. </param>
+        /// <param name="requestSettings">  Options for controlling the operation. </param>
         ///
         /// <returns>
         /// A RequestResponse.
@@ -491,7 +491,7 @@ namespace UserModel
             return result;
         }
 
-        #endregion IWebServiceRequest Members
+        #endregion IWebServiceRequest2 Members
 
         #region ISerializer Members
 

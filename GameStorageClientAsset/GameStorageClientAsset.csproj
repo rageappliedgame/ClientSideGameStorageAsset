@@ -47,8 +47,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="GameStorageClientAsset.cs" />
+    <Compile Include="GameStorageClientAssetSettings.cs" />
+    <Compile Include="ISerializer.cs" />
     <Compile Include="IVirtualProperties.cs" />
     <Compile Include="Node.cs" />
+    <Compile Include="NodeValue.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
@@ -60,6 +63,7 @@
       <DependentUpon>Resources.resx</DependentUpon>
       <DesignTime>True</DesignTime>
     </Compile>
+    <None Include="Manuals\Assets Base Manual.pdf" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
@@ -69,6 +73,7 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
+    <None Include="updateUnity.cmd" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
@@ -84,8 +89,16 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="License.txt" />
+    <Content Include="todo.txt" />
+    <Content Include="SavedCode.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>cmd /c "c:\Program Files (x86)\Mono\bin\pdb2mdb.bat" ModelAsset.dll
+cmd /c "c:\Program Files (x86)\Mono\bin\pdb2mdb.bat" RageAssetManager.dll
+cmd /c copy *.dll "C:\Users\Public\Documents\Unity Projects\UITests\Assets"
+cmd /c copy *.dll.mdb "C:\Users\Public\Documents\Unity Projects\UITests\Assets"</PostBuildEvent>
+  </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

@@ -23,12 +23,16 @@ namespace AssetPackage
     using System.Diagnostics;
     using System.IO;
     using System.Runtime.Serialization;
+#if PORTABLE
+    using AssetManagerPackage; //fixup for missing ISerializable interface
+#else
     using System.Runtime.Serialization.Formatters.Binary;
+#endif
     using System.Text;
     using System.Xml;
     using System.Xml.Schema;
     using System.Xml.Serialization;
-
+    using AssetManagerPackage;
     #region Enumerations
 
     // DONE Storage Type (per node and add inherited).
@@ -54,7 +58,8 @@ namespace AssetPackage
     // TODO Test performance without generic parameter & casting.
     //
     // TODO Extend Json Serialization (now a flat array of path/(xml)value).
-    // 
+    //      Define a interface IJson for this?
+    //
     // ISSUE When doing ToXml() the code seems to be using some kind of copy as Purpose and Owner are no longer set.
     //       This gives issues with the Value property.
     // ISSUE Supplying data during tree construction to Nodes with a StorageLocation Game (or inherited) is possible but illegal.
@@ -120,11 +125,15 @@ namespace AssetPackage
     #endregion Enumerations
 
     [XmlRoot("node")]
+#if PORTABLE
+#else
     [Serializable]
-    //[SecurityPermission(SecurityAction.Demand, SerializationFormatter = true)]
+#endif
     [DebuggerDisplay("Name={Name}, Path={Path}, Count={Count}")]
-    public class Node : IEnumerable, IEqualityComparer, IXmlSerializable, ISerializable
-    /*, IDisposable*/
+    public class Node : IEqualityComparer, IXmlSerializable
+#if BINARY
+, ISerializable
+#endif
     {
         #region Fields
 
@@ -172,8 +181,7 @@ namespace AssetPackage
         public String Purpose
         {
             get;
-            /*private*/
-            set;
+            private set;
         }
 
         #endregion Fields
@@ -195,7 +203,6 @@ namespace AssetPackage
             //Caching Serializer for List`1
             //Caching Serializer for String[]
             //Elapsed: 689 ms
-
 
             Stopwatch sw = new Stopwatch();
 
@@ -230,7 +237,8 @@ namespace AssetPackage
                 serializers.Add(typeof(DateTime), new XmlSerializer(typeof(DateTime)));
             }
             sw.Stop();
-            Debug.Print("Elapsed (Caching Serializers): {0} ms", sw.ElapsedMilliseconds);
+
+            // Log(Severity.Verbose, "Elapsed (Caching XmlSerializers): {0} ms", sw.ElapsedMilliseconds);
 
             sw.Reset();
             sw.Start();
@@ -294,7 +302,7 @@ namespace AssetPackage
                 typeMapper.Add("ArrayOfUnsignedByte", typeof(List<byte>));
             }
             sw.Stop();
-            Debug.Print("Elapsed (Caching types): {0} ms", sw.ElapsedMilliseconds);
+            //Log(Severity.Verbose, "Elapsed (Caching xml types): {0} ms", sw.ElapsedMilliseconds);
         }
 
         /// <summary>
@@ -303,7 +311,7 @@ namespace AssetPackage
         /// </summary>
         private Node()
         {
-            //
+            children = new List<Node>();
         }
 
         /// <summary>
@@ -370,7 +378,7 @@ namespace AssetPackage
         /// <param name="Name">            The name. </param>
         /// <param name="Value">           The value. </param>
         /// <param name="StorageLocation"> The storage location. </param>
-        public Node(Node Parent, String Name, Object Value, StorageLocations StorageLocation)
+        public Node(Node Parent, String Name, Object Value, StorageLocations StorageLocation) : this()
         {
             this.Parent = Parent;
             this.Name = Name;
@@ -378,7 +386,8 @@ namespace AssetPackage
             this.StorageLocation = StorageLocation;
         }
 
-        /// <summary>
+#if BINARY
+                /// <summary>
         /// Initializes a new instance of the AssetPackage.Node class.
         /// </summary>
         ///
@@ -428,6 +437,7 @@ namespace AssetPackage
                 // No Values present so can't restore.
             }
         }
+#endif
 
         //~Node()
         //{
@@ -451,6 +461,11 @@ namespace AssetPackage
             get
             {
                 return children;
+            }
+            set
+            {
+#warning Added for testing newtonsoft
+                children = value;
             }
         }
 
@@ -713,6 +728,20 @@ namespace AssetPackage
         }
 
         /// <summary>
+        /// Clears the data described by location.
+        /// </summary>
+        ///
+        /// <param name="location"> The location. </param>
+        public void ClearData(StorageLocations location)
+        {
+            //! Recusively Clear Data.
+            foreach (Node child in this.PostfixEnumerator(new List<StorageLocations> { location }))
+            {
+                child.Value = null;
+            }
+        }
+
+        /// <summary>
         /// Adds a child to 'Value'.
         /// </summary>
         ///
@@ -812,10 +841,17 @@ namespace AssetPackage
         /// An <see cref="T:System.Collections.IEnumerator" /> object that can be
         /// used to iterate through the collection.
         /// </returns>
-        public IEnumerator GetEnumerator()
-        {
-            return children.GetEnumerator();
-        }
+        //public IEnumerator GetEnumerator()
+        //{
+        //    if (children != null)
+        //    {
+        //        return children.GetEnumerator();
+        //    }
+        //    else
+        //    {
+        //        return new object[0].GetEnumerator();
+        //    }
+        //}
 
         /// <summary>
         /// Returns a hash code for the specified object.
@@ -858,7 +894,20 @@ namespace AssetPackage
         /// </returns>
         public IEnumerable<Node> PostfixEnumerator()
         {
-            return PostfixEnumerator(new List<StorageLocations>());
+            //return PostfixEnumerator(new List<StorageLocations>());
+
+            for (int i = 0; i < Count; i++)
+            {
+                foreach (Node child in this[i].PostfixEnumerator())
+                {
+                    yield return child;
+                }
+            }
+
+            if (!IsRoot)
+            {
+                yield return this;
+            }
         }
 
         /// <summary>
@@ -874,21 +923,44 @@ namespace AssetPackage
         /// </returns>
         public IEnumerable<Node> PostfixEnumerator(List<StorageLocations> filter)
         {
-            return (IEnumerable<Node>)PostFixChildrenOf(this, new List<Node>(), filter);
+            foreach (Node node in PostfixEnumerator())
+            {
+                //! veg: skip root item?
+                // 
+                if (!node.IsRoot && (filter.Count == 0 || filter.Contains(node.StorageLocation)))
+                {
+                    yield return node;
+                }
+            }
         }
 
         /// <summary>
-        /// Returns a prefix enumerator (depth-first) in this tree.
-        /// It visits 'nodes' before 'leaves'.
+        /// Returns a prefix enumerator (depth-first) in this tree. It visits 'nodes'
+        /// before 'leaves'.
         /// </summary>
+        ///
+        /// <remarks>
+        /// this enumerator allows building &amp; filling the structure.
+        /// </remarks>
         ///
         /// <returns>
         /// An enumerator that allows foreach to be used to process prefix enumerator
-        /// in this tree.
+        /// in this collection.
         /// </returns>
         public IEnumerable<Node> PrefixEnumerator()
         {
-            return PrefixEnumerator(new List<StorageLocations>());
+            if (!IsRoot)
+            {
+                yield return this;
+            }
+
+            for (int i = 0; i < Count; i++)
+            {
+                foreach (Node child in this[i].PrefixEnumerator())
+                {
+                    yield return child;
+                }
+            }
         }
 
         /// <summary>
@@ -908,21 +980,13 @@ namespace AssetPackage
         /// </returns>
         public IEnumerable<Node> PrefixEnumerator(List<StorageLocations> filter)
         {
-            //! veg: skip root item?
-            //
-            if (!IsRoot && (filter.Count == 0 || filter.Contains(StorageLocation)))
+            foreach (Node node in PrefixEnumerator())
             {
-                yield return this;
-            }
-
-            for (int i = 0; i < Count; i++)
-            {
-                foreach (Node child in this[i].PrefixEnumerator())
+                //! veg: skip root item?
+                // 
+                if (!node.IsRoot && (filter.Count == 0 || filter.Contains(node.StorageLocation)))
                 {
-                    if (filter.Count == 0 || filter.Contains(StorageLocation))
-                    {
-                        yield return child;
-                    }
+                    yield return node;
                 }
             }
         }
@@ -939,65 +1003,6 @@ namespace AssetPackage
         public bool Remove(Node item)
         {
             return children != null ? children.Remove(item) : false;
-        }
-
-        /// <summary>
-        /// Build Node list based on Prot fix enumeration.
-        /// </summary>
-        ///
-        /// <param name="currentNode"> The current node. </param>
-        /// <param name="result">      The result. </param>
-        ///
-        /// <returns>
-        /// A List&lt;Node&lt;T&gt;&gt;
-        /// </returns>
-        private List<Node> PostFixChildrenOf(Node currentNode, List<Node> result, List<StorageLocations> filter)
-        {
-            if (currentNode.children != null)
-            {
-                foreach (Node child in currentNode.Children)
-                {
-                    if (child.Count != 0)
-                    {
-                        PostFixChildrenOf(child, result, filter);
-                    }
-
-                    if (filter.Count == 0 || filter.Contains(child.StorageLocation))
-                    {
-                        result.Add(child);
-                    }
-                }
-            }
-            return result;
-        }
-
-        /// <summary>
-        /// Build Node list based on Pre fix enumeration.
-        /// </summary>
-        ///
-        /// <param name="currentNode"> The current node. </param>
-        /// <param name="result">      The result. </param>
-        /// <param name="filter">      Specifies the filter. </param>
-        ///
-        /// <returns>
-        /// A List&lt;Node&lt;T&gt;&gt;
-        /// </returns>
-        private List<Node> PreFixChildrenOf(Node currentNode, List<Node> result, List<StorageLocations> filter)
-        {
-            foreach (Node child in currentNode.Children)
-            {
-                if (child.Count != 0)
-                {
-                    PreFixChildrenOf(child, result, filter);
-                }
-
-                if (filter.Count == 0 || filter.Contains(child.StorageLocation))
-                {
-                    result.Add(child);
-                }
-            }
-
-            return result;
         }
 
         /// <summary>
@@ -1140,7 +1145,7 @@ namespace AssetPackage
         ///                         to which the object is serialized. </param>
         public void WriteXml(XmlWriter writer)
         {
-            Debug.Print(this.Name);
+            //Debug.Print(this.Name);
 
             //! 1) Add name as an attribute to <node>.
             // 
@@ -1208,7 +1213,7 @@ namespace AssetPackage
         {
             if (!serializers.ContainsKey(type))
             {
-                Debug.Print("Caching Serializer for {0}", type.Name);
+                // Log(Severity.Verbose, "Caching XmlSerializer for {0}", type.FullName);
 
                 serializers.Add(type, new XmlSerializer(type));
                 //serializers.Add(type, XmlSerializer.FromTypes(new[] { type })[0]);
@@ -1243,6 +1248,7 @@ namespace AssetPackage
             }
         }
 
+        /*
         /// <summary>
         /// Converts this object's Value to an XML.
         /// </summary>
@@ -1270,7 +1276,9 @@ namespace AssetPackage
                 return String.Empty;
             }
         }
+        */
 
+#if BINARY
         /// <summary>
         /// Convert this object into a binary (Base64 Encoded) representation.
         /// </summary>
@@ -1292,6 +1300,9 @@ namespace AssetPackage
                 return Convert.ToBase64String(ms.ToArray());
             }
         }
+#endif
+
+#if BINARY
 
         /// <summary>
         /// From binary.
@@ -1320,6 +1331,8 @@ namespace AssetPackage
                 // 
                 this.children = tmp.children;
 
+                //this.Purpose = tmp.Purpose;
+
                 this.storageLocation = tmp.storageLocation;
                 if (!structureOnly)
                 {
@@ -1329,6 +1342,7 @@ namespace AssetPackage
                 }
             }
         }
+#endif
 
         /// <summary>
         /// Initializes this object from the given from XML.
@@ -1360,6 +1374,8 @@ namespace AssetPackage
             }
         }
 
+#if BINARY
+
         /// <summary>
         /// Populates a
         /// <see cref="T:System.Runtime.Serialization.SerializationInfo" /> with the
@@ -1378,6 +1394,11 @@ namespace AssetPackage
             info.AddValue("location", this.storageLocation);
             info.AddValue("count", Count);
 
+            //if (Purpose != null)
+            //{
+            //    info.AddValue("purpose", Count);
+            //}
+
             if (this.Count != 0)
             {
                 for (Int32 i = 0; i < Count; i++)
@@ -1392,167 +1413,9 @@ namespace AssetPackage
                 info.AddValue("value", this.Value);
             }
         }
-
-        /*
-        /// <summary>
-        /// Flag: Has Dispose already been called?
-        /// See https://msdn.microsoft.com/en-us/library/fs2xkftw(v=vs.110).aspx
-        /// </summary>
-        private bool disposed = false;
-
-        /// <summary>
-        /// Performs application-defined tasks associated with freeing, releasing, or
-        /// resetting unmanaged resources.
-        /// 
-        /// See https://msdn.microsoft.com/en-us/library/fs2xkftw(v=vs.110).aspx
-        /// </summary>
-        public void Dispose()
-        {
-            // Dispose of unmanaged resources.
-            Dispose(true);
-
-            // Suppress finalization.
-            GC.SuppressFinalize(this);
-        }
-
-        /// <summary>
-        /// Performs application-defined tasks associated with freeing, releasing, or
-        /// resetting unmanaged resources.
-        /// 
-        /// See https://msdn.microsoft.com/en-us/library/fs2xkftw(v=vs.110).aspx.
-        /// </summary>
-        ///
-        /// <param name="disposing">    true to release both managed and unmanaged
-        ///                             resources; false to release only unmanaged
-        ///                             resources. </param>
-        private void Dispose(bool disposing)
-        {
-            if (disposed)
-                return;
-
-            if (disposing)
-            {
-                // Free any other managed objects here.
-                if (children != null)
-                {
-                    children.Clear();
-                    children = null;
-                }
-            }
-            // Free any unmanaged objects here.
-            //
-            disposed = true;
-        }
-        */
-
-        /// <summary>
-        /// Converts this object to a JSON.
-        /// </summary>
-        ///
-        /// <returns>
-        /// This object as a string.
-        /// </returns>
-        public string ToJson(List<StorageLocations> locations)
-        {
-            StringBuilder json = new StringBuilder();
-
-            // Open array.
-            json.AppendLine("[");
-
-            foreach (Node node in this.PrefixEnumerator(locations))
-            {
-                if (node.Value != null)
-                {
-                    // Append 'path': 'value',
-                    json.AppendLine(node.ToJsonValue());
-                }
-            }
-
-            // Trim trailing ','.
-            Int32 ndx = json.ToString().LastIndexOf(",");
-            json.Length = ndx;
-
-            // Close array.
-            json.AppendLine();
-            json.AppendLine("]");
-
-            return json.ToString();
-        }
-
-        /// <summary>
-        /// Converts this object to a JSON value.
-        /// </summary>
-        ///
-        /// <returns>
-        /// This object as a String.
-        /// </returns>
-        public String ToJsonValue()
-        {
-            if (value.GetType().IsPrimitive)
-            {
-                return String.Format("\"{0}\" : {1},", Path, Value);
-            }
-            else if (value is DateTime)
-            {
-                return String.Format("\"{0}\" : \"{1}\",", Path, ((DateTime)Value).ToString("O"));
-            }
-            return String.Format("\"{0}\" : \"{1}\",", Path, Value);
-        }
+#endif
 
         #endregion Methods
-
-
-        public class NodeXmlWriter : XmlTextWriter
-        {
-            public NodeXmlWriter(TextWriter w) : base(w)
-            {
-                //
-            }
-
-            public NodeXmlWriter(Stream w, Encoding encoding) : base(w, encoding)
-            {
-                //
-            }
-            public NodeXmlWriter(string filename, Encoding encoding) : base(filename, encoding)
-            {
-                //
-            }
-
-            public override void WriteStartDocument()
-            {
-                // do nothing so we don't end up with an xml declaration
-            }
-        }
-
-        /// <summary>
-        /// A string writer utf-8.
-        /// </summary>
-        ///
-        /// <remarks>
-        /// Fix-up for XDocument Serialization defaulting to utf-16.
-        /// </remarks>
-        internal class StringWriterUtf8 : StringWriter
-        {
-            #region Properties
-
-            /// <summary>
-            /// Gets the <see cref="T:System.Text.Encoding" /> in which the output is
-            /// written.
-            /// </summary>
-            ///
-            /// <value>
-            /// The Encoding in which the output is written.
-            /// </value>
-            public override Encoding Encoding
-            {
-                get
-                {
-                    return Encoding.UTF8;
-                }
-            }
-
-            #endregion Properties
-        }
     }
 
 

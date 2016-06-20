@@ -5,12 +5,12 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("GameStorageClientAsset")]
-[assembly: AssemblyDescription("RAGE GameStorage Client Asset")]
+[assembly: AssemblyTitle("UserModel")]
+[assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Open University of the Netherlands")]
-[assembly: AssemblyProduct("GameStorageClientAsset")]
-[assembly: AssemblyCopyright("Copyright © Open University of the Netherlands 2016")]
+[assembly: AssemblyCompany("")]
+[assembly: AssemblyProduct("UserModel")]
+[assembly: AssemblyCopyright("Copyright ©  2015")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -20,11 +20,8 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-#if PORTABLE
-//
-#else
-[assembly: Guid("cd230d3e-002d-4d8d-abb2-7c1891c18859")]
-#endif
+[assembly: Guid("80d2848b-f90f-4191-b67f-bd1ef3f47755")]
+
 // Version information for an assembly consists of the following four values:
 //
 //      Major Version
