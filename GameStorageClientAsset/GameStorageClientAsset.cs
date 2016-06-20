@@ -871,63 +871,6 @@ namespace AssetPackage
 #warning TODO: Not optimal location for nodePoc & nt inside the loop, but usefull during debugging.
                 Type nt = node.Value.GetType();
 
-                //Type poc = typeof(NodePocOut<>);
-                //BaseNodePoc nodePoc = (BaseNodePoc)Activator.CreateInstance(
-                //    poc.MakeGenericType(nt),
-                //    new object[] { node.Path.Replace('.', '|'), node.Value });
-
-                // String tmp2 = serializer.Serialize(nodePoc, format);
-
-                /*
-                // was node.Value;
-                //nodePoc.Path = node.Path.Replace('.', '|');
-
-                //! 3) If class, it was serialize as string 
-                //!    Note: Structs (other then internally handled internally by the serializer i.e. Guid, DataTime) are not supported yet.
-                //!    Note: Code should be improved (there should be no data in it that is not marker with a [Serializable] attribute).
-                if (node.Value is String)
-                {
-                    nodePoc.Value = node.Value.ToString();
-                }
-                else if (node.Value is DateTime)
-                {
-                    nodePoc.Value = ((DateTime)(node.Value)).ToString("O");
-                }
-                else if (nt.IsClass && nt.IsSerializable)
-                {
-                    //https://msdn.microsoft.com/en-us/library/system.type.makegenerictype%28v=vs.110%29.aspx
-                    //Type helper = typeof(Helper<>);
-                    //Type tmp = helper.MakeGenericType(new Type[] { nt });
-                    //Helper<nt> o = new Helper(node.Value); //(Helper)Activator.CreateInstance(tmp);
-                    //o.Value = node.Value;
-                    //nodePoc.Value.Value = serializer.Serialize(o, format); // was node.Value;
-                    // 
-
-                    //! The problem here is that Unity3D's serializier looks at the type so 
-                    //  won't serialize an Object field, no matter the content.
-
-                    nodePoc.Value = serializer.Serialize(node.Value, format); // was node.Value;
-                    string tmp0 = serializer.Serialize(node, format);
-
-                    IBaseHelper h = new Helper<int>(45);
-                    string tmp1 = serializer.Serialize(h, format);
-
-                    //using (MemoryStream ms = new MemoryStream())
-                    //{
-                    //    new BinaryFormatter().Serialize(ms, node.Value);
-                    //    ms.Flush();
-
-                    //    nodePoc.Value.Value = Convert.ToBase64String(ms.ToArray());
-                    //}
-                }
-                else
-                {
-                    nodePoc.Value = node.Value.ToString();
-                }
-
-                nodePoc.ValueType = node.Value.GetType().FullName;
-                */
-
                 String json = String.Empty;
 
                 IPocValue nodePocs;
@@ -1035,7 +978,7 @@ namespace AssetPackage
                     case SerializingFormat.Xml:
                         //! Surround content of Value tag with <![CDATA[ and ]]>
                         //DecoderReplacementFallback contents
-                        json = json.Replace("<Value>", "<Value><!CDATA[").Replace("</Value>", "]]</Value>");
+                        json = json.Replace("<Value>", "<Value><![CDATA[").Replace("</Value>", "]]></Value>");
                         break;
                 }
 
@@ -1075,21 +1018,6 @@ namespace AssetPackage
             return serialized.ToString();
         }
 
-        //public interface IBaseHelper
-        //{
-        //}
-
-        //[Serializable]
-        //public struct Helper<T> : IBaseHelper
-        //{
-        //    public Helper(T Value)
-        //    {
-        //        this.Value = Value;
-        //    }
-
-        //    public T Value;
-        //}
-
         /// <summary>
         /// Deserialize this object to the given stream.
         /// </summary>
@@ -1101,14 +1029,9 @@ namespace AssetPackage
         /// <param name="format">     Describes the format to use. </param>
         private void Deserialize(ISerializer serializer, Node root, String data, StorageLocations location, SerializingFormat format)
         {
-            //PocStringValues pv = new PocStringValues();
-            //pv.nodes = new PocStringValue[] { new PocStringValue { Path = "aa", Value = "bb", ValueType = "cc" } };
-            //String test = serializer.Serialize(pv, SerializingFormat.Json);
-
             //! Get a list of things to deserialize.
             // 
-#warning This fails for xml if PocValue<T> is used (value is a piece of xml that will not serialzie as a string). Both Value and ValueType tags are empty in such case.
-            PocStringValues nodes1 = (PocStringValues)serializer.Deserialize<PocStringValues>(data, format);
+            PocStringValues sNodes = (PocStringValues)serializer.Deserialize<PocStringValues>(data, format);
 
             // PocValues nodes = (PocValues)serializer.Deserialize<PocValues>(data, SerializingFormat.Json);
 
@@ -1122,9 +1045,9 @@ namespace AssetPackage
 
             //! 1) Enumerate all deserialized nodes.
             // 
-            for (Int32 i = 0; i < nodes1.nodes.Length; i++)
+            for (Int32 i = 0; i < sNodes.nodes.Length; i++)
             {
-                PocStringValue poc = nodes1.nodes[i];
+                PocStringValue poc = sNodes.nodes[i];
 
                 //! 2) Problem, in Unity all serialized Value.Value's are empty (probably due to the object type in nodepoc).
                 //!             so we now use 2 fields, Value for serializing and object for deserializing.
@@ -1151,39 +1074,48 @@ namespace AssetPackage
                 PocObjectValue fixedpoc = new PocObjectValue();
 
 #warning Json Specific Fixups Ahead!
-
-                if (poc.Value.ToString().StartsWith("{"))
+                switch (format)
                 {
-                    //! Create a Generic Method to call the Deserializer.
-                    // 
-                    MethodInfo genericMethod = method.MakeGenericMethod(tt);
+                    case SerializingFormat.Json:
+                        if (poc.Value.ToString().StartsWith("{"))
+                        {
+                            //! Create a Generic Method to call the Deserializer.
+                            // 
+                            MethodInfo genericMethod = method.MakeGenericMethod(tt);
 
-                    //! Invoke the Deserializer.
-                    // 
-                    fixedpoc.ValueAsObject = genericMethod.Invoke(serializer, new Object[] { poc.Value, format });
-                }
-                else if (poc.Value.ToString().StartsWith("["))
-                {
-                    //! Create a Generic Class to Serialize the Value into.
-                    // 
-                    Type pocType = typeof(PocValue<>);
-                    IPocValue nodePoc = (IPocValue)Activator.CreateInstance(pocType.MakeGenericType(tt));
+                            //! Invoke the Deserializer.
+                            // 
+                            fixedpoc.ValueAsObject = genericMethod.Invoke(serializer, new Object[] { poc.Value, format });
+                        }
+                        else if (poc.Value.ToString().StartsWith("["))
+                        {
+                            //! Create a Generic Class to Serialize the Value into.
+                            // 
+                            Type pocType = typeof(PocValue<>);
+                            IPocValue nodePoc = (IPocValue)Activator.CreateInstance(pocType.MakeGenericType(tt));
 
-                    //! Create a Generic Method to call the Deserializer.
-                    // 
-                    MethodInfo genericMethod = method.MakeGenericMethod(nodePoc.GetType());
+                            //! Create a Generic Method to call the Deserializer.
+                            // 
+                            MethodInfo genericMethod = method.MakeGenericMethod(nodePoc.GetType());
 
-                    //! Deserialize into the Generic Class and extract the Value.
-                    // 
-                    String s = String.Format("{{ \"Value\": {0} }}", poc.Value);
-                    nodePoc = (IPocValue)genericMethod.Invoke(serializer, new Object[] { s, format });
-                    fixedpoc.ValueAsObject = nodePoc.GetValue();
-                }
-                else
-                {
-                    //! Fallback is using Convert.ChangeType (for Primitive types for example).
-                    //
-                    fixedpoc.ValueAsObject = Convert.ChangeType(poc.Value, tt);
+                            //! Deserialize into the Generic Class and extract the Value.
+                            // 
+                            String s = String.Format("{{ \"Value\": {0} }}", poc.Value);
+                            nodePoc = (IPocValue)genericMethod.Invoke(serializer, new Object[] { s, format });
+                            fixedpoc.ValueAsObject = nodePoc.GetValue();
+                        }
+                        else
+                        {
+                            //! Fallback is using Convert.ChangeType (for Primitive types for example).
+                            //
+                            fixedpoc.ValueAsObject = Convert.ChangeType(poc.Value, tt);
+                        }
+                        break;
+
+                    case SerializingFormat.Xml:
+#warning TODO
+                        //TODO Copy Value into string togeter with ValueType.
+                        break;
                 }
 
                 //! Update Tree by path (not very optimized yet).
@@ -1446,6 +1378,10 @@ namespace AssetPackage
 
             ISerializer ser = new InternalXmlSerializer();
             Log(Severity.Warning, ser.Serialize(v, SerializingFormat.Xml));
+
+            short[] tmp = new short[] { 1, 2, 3, 4, 5 };
+
+            Debug.Print(ser.Serialize(tmp, SerializingFormat.Xml));
         }
 
         #endregion Methods
