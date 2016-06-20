@@ -21,12 +21,12 @@ namespace AssetPackage
     using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.IO;
     using System.Linq;
     using System.Reflection;
-    using System.Runtime.Serialization.Formatters.Binary;
     using System.Text;
     using System.Text.RegularExpressions;
+
+    using AssetManagerPackage;
 
     //! Not sure if this needs to stay here. Better is using Dictionary of Models instead of nesting them.
     //! Make Models keys case-insesitive?
@@ -422,7 +422,7 @@ namespace AssetPackage
         /// </returns>
         private RequestResponse IssueRequest2(string path, string method, Dictionary<string, string> headers, string body, Int32 port)
         {
-            IWebServiceRequest2 ds = getInterface<IWebServiceRequest2>();
+            IWebServiceRequest ds = getInterface<IWebServiceRequest>();
 
             RequestResponse response = new RequestResponse();
 
@@ -461,7 +461,7 @@ namespace AssetPackage
         {
             if (!Types.ContainsKey(typename))
             {
-                Debug.Print("Caching Type FullName for {0}", typename);
+                Log(Severity.Verbose, "Caching Type FullName for {0}", typename);
 
                 Type type = Type.GetType(typename);
 
@@ -511,7 +511,7 @@ namespace AssetPackage
                     }
                     else
                     {
-                        Debug.Print("IDataStorage interface not found a Bridge");
+                        Log(Severity.Warning, "IDataStorage interface not found a Bridge");
                     }
                     break;
 
@@ -535,7 +535,8 @@ namespace AssetPackage
                                 {
                                     String base64 = jsonStructure.Match(response.body).Groups[1].Value;
 
-                                    this[model].FromBinary(base64, true);
+                                    this[model].FromXml(base64);
+                                    //this[model].FromBinary(base64, true);
 
                                     Log(Severity.Information, "Structure of Model[{0}] is Restored", model);
 
@@ -544,18 +545,18 @@ namespace AssetPackage
                             }
                             else
                             {
-                                Debug.Print("Problem restoring structure from the GameStorage Server.");
+                                Log(Severity.Warning, "Problem restoring structure from the GameStorage Server.");
                             }
                         }
                         else
                         {
-                            Debug.Print("Not connected to the GameStorage Server.");
+                            Log(Severity.Warning, "Not connected to the GameStorage Server.");
                         }
                     }
                     break;
 
                 default:
-                    Debug.Print("Not implemented yet");
+                    Log(Severity.Warning, "Not implemented yet");
                     break;
             }
 
@@ -620,7 +621,7 @@ namespace AssetPackage
                     }
                     else
                     {
-                        Debug.Print("IDataStorage interface not found a Bridge");
+                        Log(Severity.Warning, "IDataStorage interface not found a Bridge");
                     }
                     break;
 
@@ -649,18 +650,18 @@ namespace AssetPackage
                             }
                             else
                             {
-                                Debug.Print("Problem restoring data from the GameStorage Server.");
+                                Log(Severity.Warning, "Problem restoring data from the GameStorage Server.");
                             }
                         }
                         else
                         {
-                            Debug.Print("Not connected to the GameStorage Server.");
+                            Log(Severity.Warning, "Not connected to the GameStorage Server.");
                         }
                     }
                     break;
 
                 default:
-                    Debug.Print("Not implemented yet");
+                    Log(Severity.Warning, "Not implemented yet");
                     break;
             }
 
@@ -745,7 +746,7 @@ namespace AssetPackage
                                 }
                                 else
                                 {
-                                    Debug.Print("IDataStorage interface not found a Bridge");
+                                    Log(Severity.Warning, "IDataStorage interface not found a Bridge");
                                 }
                             }
                             break;
@@ -769,23 +770,23 @@ namespace AssetPackage
                                             json,
                                             (Settings as GameStorageClientAssetSettings).Port);
 
-                                Debug.Print(response.body);
+                                Log(Severity.Verbose, response.body);
                             }
                             break;
 
                         default:
-                            Debug.Print("Not implemented yet");
+                            Log(Severity.Warning, "Not implemented yet");
                             break;
                     }
                 }
                 else
                 {
-                    Debug.Print(String.Format("ISerializer interface for {0} not found a Bridge", format));
+                    Log(Severity.Warning, String.Format("ISerializer interface for {0} not found a Bridge", format));
                 }
             }
             else
             {
-                Debug.Print("Model not found");
+                Log(Severity.Warning, "Model not found");
             }
         }
 
@@ -814,12 +815,12 @@ namespace AssetPackage
                 {
                     //! Try Default one for xml and binary.
                     // 
-                    Debug.Print(String.Format("ISerializer interface for {0} not found a Bridge", format));
+                    Log(Severity.Warning, String.Format("ISerializer interface for {0} not found a Bridge", format));
                 }
             }
             else
             {
-                Debug.Print("Model not found");
+                Log(Severity.Warning, "Model not found");
             }
 
             return String.Empty;
@@ -920,7 +921,7 @@ namespace AssetPackage
 
                 //! 3) Adjust value to a String for Classes (not being a string).
                 // xx
-                if (!(node.Value is String) && nt.IsClass && nt.IsSerializable && !nt.IsArray)
+                if (!(node.Value is String) && nt.IsClassFix() && nt.IsSerializableFix() && !nt.IsArray)
                 {
                     //! Serialize Classes except Strings.
                     //
@@ -944,7 +945,7 @@ namespace AssetPackage
                     //! Serializes as a Json Array (not a String).
                     //! So we need to convert later. 
 
-                    MethodInfo methodInfo = typeof(Enumerable).GetMethod("ToList");
+                    MethodInfo methodInfo = typeof(Enumerable).MethodInfoFix("ToList");
                     MethodInfo method = methodInfo.MakeGenericMethod(new Type[] { nt.GetElementType() });
 
                     Type listType = typeof(List<>).MakeGenericType(new Type[] { nt.GetElementType() });
@@ -956,7 +957,7 @@ namespace AssetPackage
                     // versus:
                     //[1,2,3,4,5]
                 }
-                else if (nt.IsPrimitive)
+                else if (nt.IsPrimitiveFix())
                 {
                     //! The primitive types are Boolean, Byte, SByte, Int16, UInt16, Int32, UInt32, Int64, UInt64, IntPtr, UIntPtr, Char, Double, and Single.
                     // 
@@ -1081,6 +1082,15 @@ namespace AssetPackage
             PocStringValues nodes1 = (PocStringValues)serializer.Deserialize<PocStringValues>(data, SerializingFormat.Json);
 
             // PocValues nodes = (PocValues)serializer.Deserialize<PocValues>(data, SerializingFormat.Json);
+            // 
+
+            //! This works without types[] paramaters as there is only a single matching method.
+            // 
+            MethodInfo method = serializer.GetType().MethodInfoFix("Deserialize" /*, new Type[] { typeof(String), typeof(SerializingFormat) }*/);
+
+            //! Nicer but fails to compile on the <T> of p.Deserialize.
+            // 
+            //MethodInfo method1 = RageExtensions.GetMethodInfo<ISerializer>(p => p.Deserialize<T>(String.Empty, format));
 
             //! 1) Enumerate all deserialized nodes.
             // 
@@ -1115,29 +1125,34 @@ namespace AssetPackage
                 if (poc.Value.ToString().StartsWith("{"))
                 {
                     //! Create a Generic Method to call the Deserializer.
-                    MethodInfo method = serializer.GetType().GetMethod("Deserialize", new Type[] { typeof(String), typeof(SerializingFormat) });
-                    method = method.MakeGenericMethod(tt);
+                    // 
+                    MethodInfo genericMethod = method.MakeGenericMethod(tt);
 
-                    fixedpoc.ValueAsObject = method.Invoke(serializer, new Object[] { poc.Value, format });
+                    //! Invoke the Deserializer.
+                    // 
+                    fixedpoc.ValueAsObject = genericMethod.Invoke(serializer, new Object[] { poc.Value, format });
                 }
                 else if (poc.Value.ToString().StartsWith("["))
                 {
                     //! Create a Generic Class to Serialize the Value into.
+                    // 
                     Type pocType = typeof(PocValue<>);
                     IPocValue nodePoc = (IPocValue)Activator.CreateInstance(pocType.MakeGenericType(tt));
 
                     //! Create a Generic Method to call the Deserializer.
-                    MethodInfo method = serializer.GetType().GetMethod("Deserialize", new Type[] { typeof(String), typeof(SerializingFormat) });
-                    method = method.MakeGenericMethod(nodePoc.GetType());
+                    // 
+                    MethodInfo genericMethod = method.MakeGenericMethod(nodePoc.GetType());
 
                     //! Deserialize into the Generic Class and extract the Value.
+                    // 
                     String s = String.Format("{{ \"Value\": {0} }}", poc.Value);
-                    nodePoc = (IPocValue)method.Invoke(serializer, new Object[] { s, format });
+                    nodePoc = (IPocValue)genericMethod.Invoke(serializer, new Object[] { s, format });
                     fixedpoc.ValueAsObject = nodePoc.GetValue();
                 }
                 else
                 {
                     //! Fallback is using Convert.ChangeType (for Primitive types for example).
+                    //
                     fixedpoc.ValueAsObject = Convert.ChangeType(poc.Value, tt);
                 }
 
@@ -1163,12 +1178,12 @@ namespace AssetPackage
                 }
                 else
                 {
-                    Debug.Print(String.Format("ISerializer interface for {0} not found a Bridge", format));
+                    Log(Severity.Warning, String.Format("ISerializer interface for {0} not found a Bridge", format));
                 }
             }
             else
             {
-                Debug.Print("Model not found");
+                Log(Severity.Warning, "Model not found");
             }
         }
 
@@ -1201,7 +1216,7 @@ namespace AssetPackage
                         }
                         else
                         {
-                            Debug.Print("IDataStorage interface not found a Bridge");
+                            Log(Severity.Warning, "IDataStorage interface not found a Bridge");
                         }
                         break;
 
@@ -1219,7 +1234,8 @@ namespace AssetPackage
                                     String.Format("storage/model/{0}", model),
                                     "PUT", headers,
                                     String.Format("{{\r\n \"structure\": \"{0}\"}}",
-                                    this[model].ToBinary(true)), settings.Port);
+                                    this[model].ToXml(true)), settings.Port);
+                                //this[model].ToBinary(true)), settings.Port);
 
                                 if (response.ResultAllowed)
                                 {
@@ -1234,24 +1250,24 @@ namespace AssetPackage
                                 }
                                 else
                                 {
-                                    Debug.Print("Problem persisting structure on the GameStorage Server.");
+                                    Log(Severity.Warning, "Problem persisting structure on the GameStorage Server.");
                                 }
                             }
                             else
                             {
-                                Debug.Print("Not connected to the GameStorage Server.");
+                                Log(Severity.Warning, "Not connected to the GameStorage Server.");
                             }
                         }
                         break;
 
                     default:
-                        Debug.Print("Not implemented yet");
+                        Log(Severity.Warning, "Not implemented yet");
                         break;
                 }
             }
             else
             {
-                Debug.Print("Model not found");
+                Log(Severity.Warning, "Model not found");
             }
 
             return false;
@@ -1285,7 +1301,7 @@ namespace AssetPackage
                             }
                             else
                             {
-                                Debug.Print("IDataStorage interface not found a Bridge");
+                                Log(Severity.Warning, "IDataStorage interface not found a Bridge");
                             }
                         }
                         break;
@@ -1317,24 +1333,24 @@ namespace AssetPackage
                                 }
                                 else
                                 {
-                                    Debug.Print("Problem deleting structure on the GameStorage Server.");
+                                    Log(Severity.Warning, "Problem deleting structure on the GameStorage Server.");
                                 }
                             }
                             else
                             {
-                                Debug.Print("Not connected to the GameStorage Server.");
+                                Log(Severity.Warning, "Not connected to the GameStorage Server.");
                             }
                         }
                         break;
 
                     default:
-                        Debug.Print("Not implemented yet");
+                        Log(Severity.Warning, "Not implemented yet");
                         break;
                 }
             }
             else
             {
-                Debug.Print("Model not found");
+                Log(Severity.Warning, "Model not found");
             }
 
             return false;

@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<node name="root" location="Local">
+  <children count="1">
+    <node name="F">
+      <value>
+        <string>F</string>
+      </value>
+      <children count="2">
+        <node name="B">
+          <value>
+            <string>B</string>
+          </value>
+          <children count="2">
+            <node name="A">
+              <value>
+                <string>A</string>
+              </value>
+            </node>
+            <node name="D">
+              <value>
+                <string>D</string>
+              </value>
+              <children count="2">
+                <node name="C">
+                  <value>
+                    <string>C</string>
+                  </value>
+                </node>
+                <node name="E">
+                  <value>
+                    <unsignedByte>5</unsignedByte>
+                  </value>
+                </node>
+              </children>
+            </node>
+          </children>
+        </node>
+        <node name="G" location="Game">
+          <value>
+            <string>G</string>
+          </value>
+          <children count="1">
+            <node name="I">
+              <value>
+                <string>I</string>
+              </value>
+              <children count="1">
+                <node name="H">
+                  <value>
+                    <string>H</string>
+                  </value>
+                </node>
+              </children>
+            </node>
+          </children>
+        </node>
+      </children>
+    </node>
+  </children>
+</node>

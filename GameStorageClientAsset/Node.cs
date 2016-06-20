@@ -22,9 +22,12 @@ namespace AssetPackage
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
-    using System.Linq;
     using System.Runtime.Serialization;
+#if PORTABLE
+    using AssetManagerPackage; //fixup for missing ISerializable interface
+#else
     using System.Runtime.Serialization.Formatters.Binary;
+#endif
     using System.Text;
     using System.Xml;
     using System.Xml.Schema;
@@ -122,9 +125,15 @@ namespace AssetPackage
     #endregion Enumerations
 
     [XmlRoot("node")]
+#if PORTABLE
+#else
     [Serializable]
+#endif
     [DebuggerDisplay("Name={Name}, Path={Path}, Count={Count}")]
-    public class Node : IEqualityComparer, IXmlSerializable, ISerializable
+    public class Node : IEqualityComparer, IXmlSerializable
+#if BINARY
+, ISerializable
+#endif
     {
         #region Fields
 
@@ -228,7 +237,8 @@ namespace AssetPackage
                 serializers.Add(typeof(DateTime), new XmlSerializer(typeof(DateTime)));
             }
             sw.Stop();
-            Debug.Print("Elapsed (Caching XmlSerializers): {0} ms", sw.ElapsedMilliseconds);
+
+            // Log(Severity.Verbose, "Elapsed (Caching XmlSerializers): {0} ms", sw.ElapsedMilliseconds);
 
             sw.Reset();
             sw.Start();
@@ -292,7 +302,7 @@ namespace AssetPackage
                 typeMapper.Add("ArrayOfUnsignedByte", typeof(List<byte>));
             }
             sw.Stop();
-            Debug.Print("Elapsed (Caching xml types): {0} ms", sw.ElapsedMilliseconds);
+            //Log(Severity.Verbose, "Elapsed (Caching xml types): {0} ms", sw.ElapsedMilliseconds);
         }
 
         /// <summary>
@@ -376,7 +386,8 @@ namespace AssetPackage
             this.StorageLocation = StorageLocation;
         }
 
-        /// <summary>
+#if BINARY
+                /// <summary>
         /// Initializes a new instance of the AssetPackage.Node class.
         /// </summary>
         ///
@@ -426,6 +437,7 @@ namespace AssetPackage
                 // No Values present so can't restore.
             }
         }
+#endif
 
         //~Node()
         //{
@@ -1201,7 +1213,7 @@ namespace AssetPackage
         {
             if (!serializers.ContainsKey(type))
             {
-                Debug.Print("Caching XmlSerializer for {0}", type.FullName);
+                // Log(Severity.Verbose, "Caching XmlSerializer for {0}", type.FullName);
 
                 serializers.Add(type, new XmlSerializer(type));
                 //serializers.Add(type, XmlSerializer.FromTypes(new[] { type })[0]);
@@ -1265,6 +1277,8 @@ namespace AssetPackage
             }
         }
         */
+
+#if BINARY
         /// <summary>
         /// Convert this object into a binary (Base64 Encoded) representation.
         /// </summary>
@@ -1286,6 +1300,9 @@ namespace AssetPackage
                 return Convert.ToBase64String(ms.ToArray());
             }
         }
+#endif
+
+#if BINARY
 
         /// <summary>
         /// From binary.
@@ -1325,6 +1342,7 @@ namespace AssetPackage
                 }
             }
         }
+#endif
 
         /// <summary>
         /// Initializes this object from the given from XML.
@@ -1355,6 +1373,8 @@ namespace AssetPackage
                 this.Value = tmp.Value;
             }
         }
+
+#if BINARY
 
         /// <summary>
         /// Populates a
@@ -1393,30 +1413,9 @@ namespace AssetPackage
                 info.AddValue("value", this.Value);
             }
         }
+#endif
 
         #endregion Methods
-
-        public class NodeXmlWriter : XmlTextWriter
-        {
-            public NodeXmlWriter(TextWriter w) : base(w)
-            {
-                //
-            }
-
-            public NodeXmlWriter(Stream w, Encoding encoding) : base(w, encoding)
-            {
-                //
-            }
-            public NodeXmlWriter(string filename, Encoding encoding) : base(filename, encoding)
-            {
-                //
-            }
-
-            public override void WriteStartDocument()
-            {
-                // do nothing so we don't end up with an xml declaration
-            }
-        }
 
         /// <summary>
         /// A string writer utf-8.
