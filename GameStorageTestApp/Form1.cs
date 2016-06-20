@@ -229,6 +229,8 @@ namespace UserModel
         {
             BuildDemo();
 
+            storage.LoadData("Wiki", StorageLocations.Local, SerializingFormat.Xml);
+
             if (storage.Connected)
             {
                 //{
@@ -316,6 +318,8 @@ namespace UserModel
         {
             BuildDemo();
 
+            storage.SaveData("Wiki", StorageLocations.Local, SerializingFormat.Xml);
+
             if (storage.Connected)
             {
                 storage.SaveData("Wiki", StorageLocations.Server, SerializingFormat.Json);
@@ -342,7 +346,7 @@ namespace UserModel
                 {
                     //! Structure + Data.
                     //
-                    textBox1.Text = storage[kvp.Key].ToXml(false);
+                    textBox1.Text = storage[kvp.Key].ToXml(true);
 
                     storage.DeleteStructure(kvp.Key, StorageLocations.Server);
 
@@ -352,7 +356,7 @@ namespace UserModel
 
                     //! Structure Only.
                     //
-                    textBox2.Text = storage[kvp.Key].ToXml(false);
+                    textBox2.Text = storage[kvp.Key].ToXml(true);
                 }
             }
             else
@@ -685,6 +689,11 @@ namespace UserModel
             }
 
             textBox2.Text = storage["Wiki"].ToXml(false);
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            storage.TestCode();
         }
     }
 }

@@ -21,11 +21,13 @@ namespace AssetPackage
     using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.IO;
     using System.Linq;
     using System.Reflection;
     using System.Text;
     using System.Text.RegularExpressions;
-
+    using System.Xml;
+    using System.Xml.Serialization;
     using AssetManagerPackage;
 
     //! Not sure if this needs to stay here. Better is using Dictionary of Models instead of nesting them.
@@ -119,6 +121,7 @@ namespace AssetPackage
         private Dictionary<SerializingFormat, String> prefixes = new Dictionary<SerializingFormat, string>();
         private Dictionary<SerializingFormat, String> separators = new Dictionary<SerializingFormat, string>();
         private Dictionary<SerializingFormat, String> suffixes = new Dictionary<SerializingFormat, string>();
+        private Dictionary<SerializingFormat, String> extensions = new Dictionary<SerializingFormat, string>();
 
         #endregion Fields
 
@@ -141,12 +144,16 @@ namespace AssetPackage
             settings = new GameStorageClientAssetSettings();
 
             prefixes.Add(SerializingFormat.Json, "{ \"nodes\" : [");
-            prefixes.Add(SerializingFormat.Xml, "<Nodes>");
+            prefixes.Add(SerializingFormat.Xml, "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<PocStringValues><nodes>");
 
             separators.Add(SerializingFormat.Json, ",");
 
             suffixes.Add(SerializingFormat.Json, "] }");
-            suffixes.Add(SerializingFormat.Xml, "</Nodes>");
+            suffixes.Add(SerializingFormat.Xml, "</nodes></PocStringValues>");
+
+            extensions.Add(SerializingFormat.Json, ".json");
+            extensions.Add(SerializingFormat.Xml, ".xml");
+            extensions.Add(SerializingFormat.Binary, ".bin");
 
             if (LoadSettings(SettingsFileName))
             {
@@ -472,8 +479,13 @@ namespace AssetPackage
         }
 
         /// <summary>
-        /// Loads a structure.
+        /// Loads a models Structure.
         /// </summary>
+        ///
+        /// <remarks>
+        /// Local serialization format is Xml, for the server the same Xml is base64
+        /// encoded into Json as the server is MongoDB based without Xml support.
+        /// </remarks>
         ///
         /// <param name="model">    The model. </param>
         /// <param name="location"> The location. </param>
@@ -492,7 +504,7 @@ namespace AssetPackage
 
                     if (storage != null)
                     {
-                        if (storage.Exists(model + ".xml"))
+                        if (storage.Exists(model + extensions[SerializingFormat.Xml]))
                         {
                             if (Models.ContainsKey(model))
                             {
@@ -504,7 +516,7 @@ namespace AssetPackage
                                 Models[model] = new Node(this, model);
                             }
 
-                            Models[model].FromXml(storage.Load(model + ".xml"));
+                            Models[model].FromXml(storage.Load(model + extensions[SerializingFormat.Xml]));
 
                             return true;
                         }
@@ -534,8 +546,10 @@ namespace AssetPackage
                                 if (jsonStructure.IsMatch(response.body))
                                 {
                                     String base64 = jsonStructure.Match(response.body).Groups[1].Value;
+                                    Byte[] bytes = Convert.FromBase64String(base64);
+                                    String structure = Encoding.UTF8.GetString(bytes, 0, bytes.Length);
 
-                                    this[model].FromXml(base64);
+                                    this[model].FromXml(structure);
                                     //this[model].FromBinary(base64, true);
 
                                     Log(Severity.Information, "Structure of Model[{0}] is Restored", model);
@@ -577,25 +591,25 @@ namespace AssetPackage
                         switch (format)
                         {
                             case SerializingFormat.Xml:
-                                if (storage.Exists(model + ".xml"))
-                                {
-                                    if (Models.ContainsKey(model))
-                                    {
-                                        Models[model].ClearData(location);
-                                    }
-                                    else
-                                    {
-                                        Models[model] = new Node(this, model);
-                                    }
+                            //if (storage.Exists(model + extensions[format]))
+                            //{
+                            //    if (Models.ContainsKey(model))
+                            //    {
+                            //        Models[model].ClearData(location);
+                            //    }
+                            //    else
+                            //    {
+                            //        Models[model] = new Node(this, model);
+                            //    }
 
-                                    Models[model].FromXml(storage.Load(model + ".xml"));
+                            //    Models[model].FromXml(storage.Load(model + extensions[format]));
 
-                                    return true;
-                                }
-                                break;
+                            //    return true;
+                            //}
+                            //break;
 
                             case SerializingFormat.Json:
-                                if (storage.Exists(model + ".json"))
+                                if (storage.Exists(model + extensions[format]))
                                 {
                                     if (Models.ContainsKey(model))
                                     {
@@ -606,9 +620,9 @@ namespace AssetPackage
                                         Models[model] = new Node(this, model);
                                     }
 
-                                    string json = storage.Load(model + ".json");
+                                    string data = storage.Load(model + extensions[format]);
 
-                                    DeSerializeData(model, json, location, format);
+                                    DeSerializeData(model, data, location, format);
 
                                     return true;
                                 }
@@ -730,58 +744,49 @@ namespace AssetPackage
         {
             if (Models.ContainsKey(model))
             {
-                ISerializer serializer = getInterface<ISerializer>();
-
-                if (serializer != null && serializer.Supports(format))
+                switch (location)
                 {
-                    switch (location)
-                    {
-                        case StorageLocations.Local:
+                    case StorageLocations.Local:
+                        {
+                            IDataStorage storage = getInterface<IDataStorage>();
+
+                            if (storage != null)
                             {
-                                IDataStorage storage = getInterface<IDataStorage>();
-
-                                if (storage != null)
-                                {
-                                    storage.Save(model + ".json", SerializeData(model, location, format));
-                                }
-                                else
-                                {
-                                    Log(Severity.Warning, "IDataStorage interface not found a Bridge");
-                                }
+                                storage.Save(model + extensions[format], SerializeData(model, location, format));
                             }
-                            break;
-
-                        case StorageLocations.Server:
+                            else
                             {
-                                Dictionary<string, string> headers = new Dictionary<string, string>();
-
-                                headers.Add("Content-Type", "application/json");
-                                headers.Add("Accept", "application/json");
-                                headers.Add("Authorization", String.Format("Bearer {0}", settings.UserToken));
-
-                                //#error Format for mongo is not correct. should be "path": "value"
-
-                                String json = SerializeData(model, location, format);
-
-                                RequestResponse response = IssueRequest2(
-                                            String.Format("storage/data/{0}", model),
-                                            "PUT",
-                                            headers,
-                                            json,
-                                            (Settings as GameStorageClientAssetSettings).Port);
-
-                                Log(Severity.Verbose, response.body);
+                                Log(Severity.Warning, "IDataStorage interface not found a Bridge");
                             }
-                            break;
+                        }
+                        break;
 
-                        default:
-                            Log(Severity.Warning, "Not implemented yet");
-                            break;
-                    }
-                }
-                else
-                {
-                    Log(Severity.Warning, String.Format("ISerializer interface for {0} not found a Bridge", format));
+                    case StorageLocations.Server:
+                        {
+                            Dictionary<string, string> headers = new Dictionary<string, string>();
+
+                            headers.Add("Content-Type", "application/json");
+                            headers.Add("Accept", "application/json");
+                            headers.Add("Authorization", String.Format("Bearer {0}", settings.UserToken));
+
+                            //#error Format for mongo is not correct. should be "path": "value"
+
+                            String json = SerializeData(model, location, format);
+
+                            RequestResponse response = IssueRequest2(
+                                        String.Format("storage/data/{0}", model),
+                                        "PUT",
+                                        headers,
+                                        json,
+                                        (Settings as GameStorageClientAssetSettings).Port);
+
+                            Log(Severity.Verbose, response.body);
+                        }
+                        break;
+
+                    default:
+                        Log(Severity.Warning, "Not implemented yet");
+                        break;
                 }
             }
             else
@@ -815,7 +820,15 @@ namespace AssetPackage
                 {
                     //! Try Default one for xml and binary.
                     // 
-                    Log(Severity.Warning, String.Format("ISerializer interface for {0} not found a Bridge", format));
+                    switch (format)
+                    {
+                        case SerializingFormat.Xml:
+                            return Serialize(new InternalXmlSerializer(), Models[model], location, format);
+
+                        default:
+                            Log(Severity.Warning, String.Format("ISerializer interface for {0} not found a Bridge", format));
+                            break;
+                    };
                 }
             }
             else
@@ -926,7 +939,8 @@ namespace AssetPackage
                     //! Serialize Classes except Strings.
                     //
                     //! Serializes as a Json Class (not a String).
-                    //! So we need to convert later. 
+                    //! So we need to convert later.
+                    //! TODO Cache these?
                     nodePocs = (IPocValue)Activator.CreateInstance(pocValueType.MakeGenericType(nt));
                     nodePocs.SetValue(node.Value);
 
@@ -983,36 +997,48 @@ namespace AssetPackage
 
                 json = serializer.Serialize(nodePocs, format);
 
-                //! Fixups for classes and arrays.
-                // 
-                if (jsonValue.IsMatch(json))
+                switch (format)
                 {
-                    Match m = jsonValue.Match(json);
+                    case SerializingFormat.Json:
+                        //! Fixups for classes and arrays.
+                        // 
+                        if (jsonValue.IsMatch(json))
+                        {
+                            Match m = jsonValue.Match(json);
 
-                    //m.Index, m.Length
-                    String cls = m.Groups[1].Value;
+                            //m.Index, m.Length
+                            String cls = m.Groups[1].Value;
 
-                    cls = cls.Replace("\r", "\\r");
-                    cls = cls.Replace("\n", "\\n");
-                    cls = cls.Replace("\"", "\\\"");
+                            cls = cls.Replace("\r", "\\r");
+                            cls = cls.Replace("\n", "\\n");
+                            cls = cls.Replace("\"", "\\\"");
 
-                    json = json.Remove(m.Index, m.Length);
-                    json = json.Insert(m.Index, String.Format("\"Value\": \"{0}\"", cls));
+                            json = json.Remove(m.Index, m.Length);
+                            json = json.Insert(m.Index, String.Format("\"Value\": \"{0}\"", cls));
+                        }
+                        else if (jsonArray.IsMatch(json))
+                        {
+                            Match m = jsonArray.Match(json);
+
+                            //m.Index, m.Length
+                            String cls = m.Groups[1].Value;
+
+                            cls = cls.Replace("\r", "\\r");
+                            cls = cls.Replace("\n", "\\n");
+                            cls = cls.Replace("\"", "\\\"");
+
+                            json = json.Remove(m.Index, m.Length);
+                            json = json.Insert(m.Index, String.Format("\"Value\": \"{0}\"", cls));
+                        }
+
+                        break;
+                    case SerializingFormat.Xml:
+                        //! Surround content of Value tag with <![CDATA[ and ]]>
+                        //DecoderReplacementFallback contents
+                        json = json.Replace("<Value>", "<Value><!CDATA[").Replace("</Value>", "]]</Value>");
+                        break;
                 }
-                else if (jsonArray.IsMatch(json))
-                {
-                    Match m = jsonArray.Match(json);
 
-                    //m.Index, m.Length
-                    String cls = m.Groups[1].Value;
-
-                    cls = cls.Replace("\r", "\\r");
-                    cls = cls.Replace("\n", "\\n");
-                    cls = cls.Replace("\"", "\\\"");
-
-                    json = json.Remove(m.Index, m.Length);
-                    json = json.Insert(m.Index, String.Format("\"Value\": \"{0}\"", cls));
-                }
                 serialized.Append(String.Format("{0}", json));
 
                 //! 5) Write separator if any.
@@ -1075,17 +1101,19 @@ namespace AssetPackage
         /// <param name="format">     Describes the format to use. </param>
         private void Deserialize(ISerializer serializer, Node root, String data, StorageLocations location, SerializingFormat format)
         {
-            PocStringValues pv = new PocStringValues();
-            pv.nodes = new PocStringValue[] { new PocStringValue { Path = "aa", Value = "bb", ValueType = "cc" } };
-            String test = serializer.Serialize(pv, SerializingFormat.Json);
+            //PocStringValues pv = new PocStringValues();
+            //pv.nodes = new PocStringValue[] { new PocStringValue { Path = "aa", Value = "bb", ValueType = "cc" } };
+            //String test = serializer.Serialize(pv, SerializingFormat.Json);
 
-            PocStringValues nodes1 = (PocStringValues)serializer.Deserialize<PocStringValues>(data, SerializingFormat.Json);
+            //! Get a list of things to deserialize.
+            // 
+#warning This fails for xml if PocValue<T> is used (value is a piece of xml that will not serialzie as a string). Both Value and ValueType tags are empty in such case.
+            PocStringValues nodes1 = (PocStringValues)serializer.Deserialize<PocStringValues>(data, format);
 
             // PocValues nodes = (PocValues)serializer.Deserialize<PocValues>(data, SerializingFormat.Json);
-            // 
 
             //! This works without types[] paramaters as there is only a single matching method.
-            // 
+            //
             MethodInfo method = serializer.GetType().MethodInfoFix("Deserialize" /*, new Type[] { typeof(String), typeof(SerializingFormat) }*/);
 
             //! Nicer but fails to compile on the <T> of p.Deserialize.
@@ -1121,6 +1149,8 @@ namespace AssetPackage
 
                 // The "null" is because it's a static method
                 PocObjectValue fixedpoc = new PocObjectValue();
+
+#warning Json Specific Fixups Ahead!
 
                 if (poc.Value.ToString().StartsWith("{"))
                 {
@@ -1178,7 +1208,17 @@ namespace AssetPackage
                 }
                 else
                 {
-                    Log(Severity.Warning, String.Format("ISerializer interface for {0} not found a Bridge", format));
+                    //! Try Default one for xml and binary.
+                    // 
+                    switch (format)
+                    {
+                        case SerializingFormat.Xml:
+                            Deserialize(new InternalXmlSerializer(), Models[model], data, location, format);
+                            break;
+                        default:
+                            Log(Severity.Warning, String.Format("ISerializer interface for {0} not found a Bridge", format));
+                            break;
+                    }
                 }
             }
             else
@@ -1187,10 +1227,14 @@ namespace AssetPackage
             }
         }
 
-
         /// <summary>
-        /// Saves.
+        /// Saves the Model structure.
         /// </summary>
+        ///
+        /// <remarks>
+        /// Local serialization format is Xml, for the server the same Xml is base64 encoded into
+        /// Json as the server is MongoDB based without Xml support.
+        /// </remarks>
         ///
         /// <param name="model">    The model. </param>
         /// <param name="location"> The location. </param>
@@ -1211,7 +1255,8 @@ namespace AssetPackage
 
                         if (storage != null)
                         {
-                            storage.Save(model + ".xml", Models[model].ToXml());
+                            storage.Save(model + extensions[SerializingFormat.Xml], Models[model].ToXml());
+
                             return true;
                         }
                         else
@@ -1230,12 +1275,19 @@ namespace AssetPackage
                                 headers["Accept"] = "application/json";
                                 headers["Authorization"] = String.Format("Bearer {0}", settings.UserToken);
 
+                                //! Base64 Encode Xml Structure so we do not have issues with quotes ect.
+                                // 
+                                Byte[] structure = Encoding.UTF8.GetBytes(this[model].ToXml(true));
+                                String data = String.Format("{{\r\n \"structure\": \"{0}\"}}", Convert.ToBase64String(structure));
+
+                                //this[model].ToBinary(true))
+
                                 RequestResponse response = IssueRequest2(
                                     String.Format("storage/model/{0}", model),
-                                    "PUT", headers,
-                                    String.Format("{{\r\n \"structure\": \"{0}\"}}",
-                                    this[model].ToXml(true)), settings.Port);
-                                //this[model].ToBinary(true)), settings.Port);
+                                    "PUT",
+                                    headers,
+                                    data,
+                                    settings.Port);
 
                                 if (response.ResultAllowed)
                                 {
@@ -1297,7 +1349,7 @@ namespace AssetPackage
 
                             if (storage != null)
                             {
-                                return storage.Delete(model + ".xml");
+                                return storage.Delete(model + extensions[SerializingFormat.Xml]);
                             }
                             else
                             {
@@ -1370,11 +1422,110 @@ namespace AssetPackage
             return base.getInterface<T>();
         }
 
+        /// <summary>
+        /// Returns an enumerator that iterates through a collection.
+        /// </summary>
+        ///
+        /// <returns>
+        /// An <see cref="T:System.Collections.IEnumerator" /> object that can be
+        /// used to iterate through the collection.
+        /// </returns>
         public IEnumerator GetEnumerator()
         {
             return Models.GetEnumerator();
         }
 
+        public void TestCode()
+        {
+            PocStringValues v = new PocStringValues();
+            v.nodes = new PocStringValue[]
+            {
+                new PocStringValue { Path="xyz",Value="abc", ValueType="System.Int32"},
+                new PocStringValue { Path="def",Value="123", ValueType="System.Int32"}
+            };
+
+            ISerializer ser = new InternalXmlSerializer();
+            Log(Severity.Warning, ser.Serialize(v, SerializingFormat.Xml));
+        }
+
         #endregion Methods
+
+        /// <summary>
+        /// An internal XML serializer.
+        /// </summary>
+        private class InternalXmlSerializer : ISerializer
+        {
+            /// <summary>
+            /// Deserialize this object to the given textual representation and format.
+            /// </summary>
+            ///
+            /// <typeparam name="T"> Generic type parameter. </typeparam>
+            /// <param name="text">   The text to deserialize. </param>
+            /// <param name="format"> Describes the format to use. </param>
+            ///
+            /// <returns>
+            /// An object.
+            /// </returns>
+            public object Deserialize<T>(string text, SerializingFormat format)
+            {
+                XmlSerializer ser = new XmlSerializer(typeof(T));
+
+                using (MemoryStream ms = new MemoryStream(Encoding.UTF8.GetBytes(text)))
+                {
+                    return (T)ser.Deserialize(ms);
+                }
+            }
+
+            /// <summary>
+            /// Serialize this object to the given textual representation and format.
+            /// </summary>
+            ///
+            /// <param name="obj">    The object to serialize. </param>
+            /// <param name="format"> Describes the format to use. </param>
+            ///
+            /// <returns>
+            /// A string.
+            /// </returns>
+            public string Serialize(object obj, SerializingFormat format)
+            {
+                XmlSerializer ser = new XmlSerializer(obj.GetType());
+
+                XmlWriterSettings settings = new XmlWriterSettings();
+                settings.OmitXmlDeclaration = true;
+
+                XmlSerializerNamespaces ns = new XmlSerializerNamespaces();
+                ns.Add("", "");
+
+                using (StringWriterUtf8 textWriter = new StringWriterUtf8())
+                {
+                    using (XmlWriter tw = XmlWriter.Create(textWriter, settings))
+                    {
+                        ser.Serialize(tw, obj, ns);
+                    }
+
+                    textWriter.Flush();
+
+                    return textWriter.ToString();
+                }
+            }
+
+            /// <summary>
+            /// Supports the given format.
+            /// </summary>
+            ///
+            /// <remarks>
+            /// Supports only XML.
+            /// </remarks>
+            ///
+            /// <param name="format"> Describes the format to use. </param>
+            ///
+            /// <returns>
+            /// true if it succeeds, false if it fails.
+            /// </returns>
+            public bool Supports(SerializingFormat format)
+            {
+                return format == SerializingFormat.Xml;
+            }
+        }
     }
 }
