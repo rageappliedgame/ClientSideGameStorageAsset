@@ -679,6 +679,10 @@ namespace UserModel
 
             textBox1.Text = storage["Wiki"].ToXml(false);
 
+            //foreach (Node node in storage["Wiki"].Children)
+            //{
+            //}
+
             storage["Wiki"]["F"].Value = 42;
             {
                 sw.Reset();

@@ -141,8 +141,6 @@ namespace AssetPackage
             Types.Add(typeof(Double).FullName, typeof(Double));
             Types.Add(typeof(DateTime).FullName, typeof(DateTime));
 
-            settings = new GameStorageClientAssetSettings();
-
             prefixes.Add(SerializingFormat.Json, "{ \"nodes\" : [");
             prefixes.Add(SerializingFormat.Xml, "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<PocStringValues><nodes>");
 
@@ -154,6 +152,10 @@ namespace AssetPackage
             extensions.Add(SerializingFormat.Json, ".json");
             extensions.Add(SerializingFormat.Xml, ".xml");
             extensions.Add(SerializingFormat.Binary, ".bin");
+
+            //! Create Settings Object so they can be loaded or saved as default.
+            // 
+            settings = new GameStorageClientAssetSettings();
 
             if (LoadSettings(SettingsFileName))
             {
