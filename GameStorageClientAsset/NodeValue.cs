@@ -18,12 +18,12 @@
 namespace AssetPackage
 {
     using System;
-    using System.Xml;
     using System.Xml.Serialization;
+
     /// <summary>
-    /// Interface for poc value classes.
+    /// Interface for node value classes.
     /// </summary>
-    public interface IPocValue
+    public interface INodeValue
     {
         Object GetValue();
         void SetValue(Object Value);
@@ -41,21 +41,21 @@ namespace AssetPackage
 #endif
 
     /// <summary>
-    /// (Serializable)a poc string values. Used to deserialize the Json nodes
+    /// (Serializable)a node with string values. Used to deserialize the Json nodes
     /// Array as all Values are encoded as string.
     /// </summary>
     ///
     /// <remarks>
     /// For Unity3D's Json Serializer only fields are allowed (so no properties).
     /// </remarks>
-    public class PocStringValues
+    public class NodeStringValues
     {
-        public PocStringValues()
+        public NodeStringValues()
         {
-            nodes = new PocStringValue[0];
+            nodes = new NodeStringValue[0];
         }
 
-        public PocStringValue[] nodes;
+        public NodeStringValue[] nodes;
     }
 
 #if PORTABLE
@@ -64,23 +64,34 @@ namespace AssetPackage
 #endif
 
     /// <summary>
-    /// (Serializable)a poc string value.
+    /// (Serializable)a Node as String Value.
     /// </summary>
     ///
     /// <remarks>
     /// For Unity3D's Json Serializer only fields are allowed (so no properties).
     /// </remarks>
-    public class PocStringValue
+    public class NodeStringValue
     {
+        /// <summary>
+        /// The value.
+        /// </summary>
         public String Value;
+
+        /// <summary>
+        /// Full pathname of the file.
+        /// </summary>
         public String Path;
+
+        /// <summary>
+        /// Type of the value.
+        /// </summary>
         public String ValueType;
     }
 
     /// <summary>
-    /// A poc object value with an additional object to store deserialzied values.
+    /// A Node String Object value with an additional object to store deserialzied values.
     /// </summary>
-    public class PocObjectValue : PocStringValue
+    public class NodeObjectValue : NodeStringValue
     {
         internal Object ValueAsObject;
     }
@@ -91,17 +102,18 @@ namespace AssetPackage
 #endif
 
     /// <summary>
-    /// (Serializable)a poc value. It is used druing deserialization of Json to
+    /// (Serializable)a Typed Node Value. It is used during deserialization of Json to
     /// cast values dynamically.
     /// </summary>
     ///
     /// <remarks>
     /// For Unity3D's Json Serializer only fields are allowed (so no properties).
+    /// Is serialized as NodeStringValue.
     /// </remarks>
     ///
     /// <typeparam name="T"> Generic type parameter. </typeparam>
-    [XmlRoot("PocStringValue")]
-    public class PocValue<T> : IPocValue
+    [XmlRoot("NodeStringValue")]
+    public class NodeValue<T> : INodeValue
     {
         public T Value;
         public String Path;

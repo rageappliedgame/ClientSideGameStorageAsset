@@ -142,12 +142,12 @@ namespace AssetPackage
             Types.Add(typeof(DateTime).FullName, typeof(DateTime));
 
             prefixes.Add(SerializingFormat.Json, "{ \"nodes\" : [");
-            prefixes.Add(SerializingFormat.Xml, "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<PocStringValues><nodes>");
+            prefixes.Add(SerializingFormat.Xml, "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<NodeStringValues><nodes>");
 
             separators.Add(SerializingFormat.Json, ",");
 
             suffixes.Add(SerializingFormat.Json, "] }");
-            suffixes.Add(SerializingFormat.Xml, "</nodes></PocStringValues>");
+            suffixes.Add(SerializingFormat.Xml, "</nodes></NodeStringValues>");
 
             extensions.Add(SerializingFormat.Json, ".json");
             extensions.Add(SerializingFormat.Xml, ".xml");
@@ -864,18 +864,18 @@ namespace AssetPackage
                 serialized.AppendLine(prefixes[format]);
             }
 
-            Type pocValueType = typeof(PocValue<>);
+            Type nodeValueType = typeof(NodeValue<>);
 
             //! 2) Enumerate all nodes to be save to the specified location. 
             // 
             foreach (Node node in root.PrefixEnumerator(new List<StorageLocations> { location }))
             {
-#warning TODO: Not optimal location for nodePoc & nt inside the loop, but usefull during debugging.
+#warning TODO: Not optimal location for nodeValue & nt inside the loop, but usefull during debugging.
                 Type nt = node.Value.GetType();
 
                 String json = String.Empty;
 
-                IPocValue nodePocs;
+                INodeValue nodeValue;
 
                 //! 3) Adjust value to a String for Classes (not being a string).
                 // xx
@@ -886,8 +886,8 @@ namespace AssetPackage
                     //! Serializes as a Json Class (not a String).
                     //! So we need to convert later.
                     //! TODO Cache these?
-                    nodePocs = (IPocValue)Activator.CreateInstance(pocValueType.MakeGenericType(nt));
-                    nodePocs.SetValue(node.Value);
+                    nodeValue = (INodeValue)Activator.CreateInstance(nodeValueType.MakeGenericType(nt));
+                    nodeValue.SetValue(node.Value);
 
                     //"{\r\n  \"a\": 15,\r\n  \"b\": \"vijftien\",\r\n  \"c\": \"2016-04-21T00:05:04.4571539+02:00\"\r\n}",
                     // 
@@ -908,9 +908,9 @@ namespace AssetPackage
                     MethodInfo method = methodInfo.MakeGenericMethod(new Type[] { nt.GetElementType() });
 
                     Type listType = typeof(List<>).MakeGenericType(new Type[] { nt.GetElementType() });
-                    nodePocs = (IPocValue)Activator.CreateInstance(pocValueType.MakeGenericType(listType));
+                    nodeValue = (INodeValue)Activator.CreateInstance(nodeValueType.MakeGenericType(listType));
 
-                    nodePocs.SetValue(method.Invoke(null, new Object[] { node.Value }));
+                    nodeValue.SetValue(method.Invoke(null, new Object[] { node.Value }));
 
                     //"[\r\n  1,\r\n  2,\r\n  3,\r\n  4,\r\n  5\r\n]"
                     // versus:
@@ -920,27 +920,27 @@ namespace AssetPackage
                 {
                     //! The primitive types are Boolean, Byte, SByte, Int16, UInt16, Int32, UInt32, Int64, UInt64, IntPtr, UIntPtr, Char, Double, and Single.
                     // 
-                    nodePocs = new PocValue<String>();
+                    nodeValue = new NodeValue<String>();
 
-                    nodePocs.SetValue(node.Value.ToString());
+                    nodeValue.SetValue(node.Value.ToString());
                 }
                 else if (node.Value is DateTime)
                 {
-                    nodePocs = new PocValue<String>();
+                    nodeValue = new NodeValue<String>();
 
-                    nodePocs.SetValue(((DateTime)(node.Value)).ToString("O"));
+                    nodeValue.SetValue(((DateTime)(node.Value)).ToString("O"));
                 }
                 else
                 {
-                    nodePocs = new PocValue<String>();
+                    nodeValue = new NodeValue<String>();
 
-                    nodePocs.SetValue(node.Value.ToString());
+                    nodeValue.SetValue(node.Value.ToString());
                 }
 
-                nodePocs.SetPath(node.Path);
-                nodePocs.SetValueType(nt.FullName);
+                nodeValue.SetPath(node.Path);
+                nodeValue.SetValueType(nt.FullName);
 
-                json = serializer.Serialize(nodePocs, format);
+                json = serializer.Serialize(nodeValue, format);
 
                 switch (format)
                 {
@@ -1033,9 +1033,7 @@ namespace AssetPackage
         {
             //! Get a list of things to deserialize.
             // 
-            PocStringValues sNodes = (PocStringValues)serializer.Deserialize<PocStringValues>(data, format);
-
-            // PocValues nodes = (PocValues)serializer.Deserialize<PocValues>(data, SerializingFormat.Json);
+            NodeStringValues sNodes = (NodeStringValues)serializer.Deserialize<NodeStringValues>(data, format);
 
             //! This works without types[] paramaters as there is only a single matching method.
             //
@@ -1049,9 +1047,9 @@ namespace AssetPackage
             // 
             for (Int32 i = 0; i < sNodes.nodes.Length; i++)
             {
-                PocStringValue poc = sNodes.nodes[i];
+                NodeStringValue nodeStringValue = sNodes.nodes[i];
 
-                //! 2) Problem, in Unity all serialized Value.Value's are empty (probably due to the object type in nodepoc).
+                //! 2) Problem, in Unity all serialized Value.Value's are empty (probably due to the object type in a NodeValue).
                 //!             so we now use 2 fields, Value for serializing and object for deserializing.
                 //!             also the generic parameter is not that easy to handle as we have only a type.
                 //!             We need to create a suitable generic method for custom types.
@@ -1066,20 +1064,22 @@ namespace AssetPackage
                 //! 3) Check if type was registered.
                 // 
                 //Type nt = node.Value.GetType();
-                Type tt = LookuptType(poc.ValueType);
+                Type tt = LookuptType(nodeStringValue.ValueType);
 
                 // This does not change the node in nodes.
                 // 
-                poc.Path = poc.Path.Replace('|', '.');
+                nodeStringValue.Path = nodeStringValue.Path.Replace('|', '.');
 
                 // The "null" is because it's a static method
-                PocObjectValue fixedpoc = new PocObjectValue();
+                NodeObjectValue fixNodeValue = new NodeObjectValue();
 
 #warning Json Specific Fixups Ahead!
                 switch (format)
                 {
                     case SerializingFormat.Json:
-                        if (poc.Value.ToString().StartsWith("{"))
+                        //! Handle Class
+                        // 
+                        if (nodeStringValue.Value.ToString().StartsWith("{"))
                         {
                             //! Create a Generic Method to call the Deserializer.
                             // 
@@ -1087,30 +1087,34 @@ namespace AssetPackage
 
                             //! Invoke the Deserializer.
                             // 
-                            fixedpoc.ValueAsObject = genericMethod.Invoke(serializer, new Object[] { poc.Value, format });
+                            fixNodeValue.ValueAsObject = genericMethod.Invoke(serializer, new Object[] { nodeStringValue.Value, format });
                         }
-                        else if (poc.Value.ToString().StartsWith("["))
+                        //! Handle Array
+                        // 
+                        else if (nodeStringValue.Value.ToString().StartsWith("["))
                         {
                             //! Create a Generic Class to Serialize the Value into.
                             // 
-                            Type pocType = typeof(PocValue<>);
-                            IPocValue nodePoc = (IPocValue)Activator.CreateInstance(pocType.MakeGenericType(tt));
+                            Type nodeType = typeof(NodeValue<>);
+                            INodeValue nodeValue = (INodeValue)Activator.CreateInstance(nodeType.MakeGenericType(tt));
 
                             //! Create a Generic Method to call the Deserializer.
                             // 
-                            MethodInfo genericMethod = method.MakeGenericMethod(nodePoc.GetType());
+                            MethodInfo genericMethod = method.MakeGenericMethod(nodeValue.GetType());
 
                             //! Deserialize into the Generic Class and extract the Value.
                             // 
-                            String s = String.Format("{{ \"Value\": {0} }}", poc.Value);
-                            nodePoc = (IPocValue)genericMethod.Invoke(serializer, new Object[] { s, format });
-                            fixedpoc.ValueAsObject = nodePoc.GetValue();
+                            String s = String.Format("{{ \"Value\": {0} }}", nodeStringValue.Value);
+                            nodeValue = (INodeValue)genericMethod.Invoke(serializer, new Object[] { s, format });
+                            fixNodeValue.ValueAsObject = nodeValue.GetValue();
                         }
+                        //! Handle Everything Else with Convert
+                        // 
                         else
                         {
                             //! Fallback is using Convert.ChangeType (for Primitive types for example).
                             //
-                            fixedpoc.ValueAsObject = Convert.ChangeType(poc.Value, tt);
+                            fixNodeValue.ValueAsObject = Convert.ChangeType(nodeStringValue.Value, tt);
                         }
                         break;
 
@@ -1122,14 +1126,22 @@ namespace AssetPackage
 
                 //! Update Tree by path (not very optimized yet).
                 // 
-                Node n = root.PrefixEnumerator(new List<StorageLocations> { location }).FirstOrDefault(p => p.Path.Equals(poc.Path));
+                Node n = root.PrefixEnumerator(new List<StorageLocations> { location }).FirstOrDefault(p => p.Path.Equals(nodeStringValue.Path));
                 if (n != null)
                 {
-                    n.Value = fixedpoc.ValueAsObject;
+                    n.Value = fixNodeValue.ValueAsObject;
                 }
             }
         }
 
+        /// <summary>
+        /// De serialize data.
+        /// </summary>
+        ///
+        /// <param name="model">    The model. </param>
+        /// <param name="data">     The data. </param>
+        /// <param name="location"> The location. </param>
+        /// <param name="format">   Describes the format to use. </param>
         private void DeSerializeData(String model, String data, StorageLocations location, SerializingFormat format)
         {
             if (Models.ContainsKey(model))
@@ -1371,11 +1383,11 @@ namespace AssetPackage
 
         public void TestCode()
         {
-            PocStringValues v = new PocStringValues();
-            v.nodes = new PocStringValue[]
+            NodeStringValues v = new NodeStringValues();
+            v.nodes = new NodeStringValue[]
             {
-                new PocStringValue { Path="xyz",Value="abc", ValueType="System.Int32"},
-                new PocStringValue { Path="def",Value="123", ValueType="System.Int32"}
+                new NodeStringValue { Path="xyz",Value="abc", ValueType="System.Int32"},
+                new NodeStringValue { Path="def",Value="123", ValueType="System.Int32"}
             };
 
             ISerializer ser = new InternalXmlSerializer();
@@ -1383,7 +1395,7 @@ namespace AssetPackage
 
             short[] tmp = new short[] { 1, 2, 3, 4, 5 };
 
-            Debug.Print(ser.Serialize(tmp, SerializingFormat.Xml));
+            Log(Severity.Verbose, ser.Serialize(tmp, SerializingFormat.Xml));
         }
 
         #endregion Methods
