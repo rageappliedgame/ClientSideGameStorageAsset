@@ -440,8 +440,6 @@ namespace UserModel
                 typeof(List<string>),
             });
 
-#warning todo pretty print generic types?
-
             // See https://msdn.microsoft.com/en-us/library/windows/apps/system.type.makegenerictype(v=vs.105).aspx
             // See https://msdn.microsoft.com/en-us/library/windows/apps/system.type.getgenerictypedefinition(v=vs.105).aspx
             //

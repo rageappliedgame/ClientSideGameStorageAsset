@@ -48,14 +48,17 @@ namespace AssetPackage
     /// <remarks>
     /// For Unity3D's Json Serializer only fields are allowed (so no properties).
     /// </remarks>
+    [XmlRoot("Model")]
     public class NodeStringValues
     {
         public NodeStringValues()
         {
-            nodes = new NodeStringValue[0];
+            Nodes = new NodeStringValue[0];
         }
 
-        public NodeStringValue[] nodes;
+        [XmlArray("Nodes")]
+        [XmlArrayItem("Node")]
+        public NodeStringValue[] Nodes;
     }
 
 #if PORTABLE
@@ -91,6 +94,7 @@ namespace AssetPackage
     /// <summary>
     /// A Node String Object value with an additional object to store deserialzied values.
     /// </summary>
+    [XmlRoot("Model")]
     public class NodeObjectValue : NodeStringValue
     {
         internal Object ValueAsObject;
@@ -112,7 +116,7 @@ namespace AssetPackage
     /// </remarks>
     ///
     /// <typeparam name="T"> Generic type parameter. </typeparam>
-    [XmlRoot("NodeStringValue")]
+    [XmlRoot("Node")]
     public class NodeValue<T> : INodeValue
     {
         public T Value;

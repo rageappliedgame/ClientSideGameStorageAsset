@@ -142,16 +142,16 @@ namespace AssetPackage
             Types.Add(typeof(DateTime).FullName, typeof(DateTime));
 
             prefixes.Add(SerializingFormat.Json, "{ \"nodes\" : [");
-            prefixes.Add(SerializingFormat.Xml, "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<NodeStringValues><nodes>");
+            prefixes.Add(SerializingFormat.Xml, "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<Model>\r\n<Nodes>");
 
             separators.Add(SerializingFormat.Json, ",");
 
             suffixes.Add(SerializingFormat.Json, "] }");
-            suffixes.Add(SerializingFormat.Xml, "</nodes></NodeStringValues>");
+            suffixes.Add(SerializingFormat.Xml, "</Nodes>\r\n</Model>");
 
             extensions.Add(SerializingFormat.Json, ".json");
             extensions.Add(SerializingFormat.Xml, ".xml");
-            extensions.Add(SerializingFormat.Binary, ".bin");
+            //extensions.Add(SerializingFormat.Binary, ".bin");
 
             //! Create Settings Object so they can be loaded or saved as default.
             // 
@@ -323,6 +323,11 @@ namespace AssetPackage
 
         #region Methods
 
+        /// <summary>
+        /// Registers the types described by types.
+        /// </summary>
+        ///
+        /// <param name="types"> The types. </param>
         public void RegisterTypes(Type[] types)
         {
             foreach (Type type in types)
@@ -470,7 +475,7 @@ namespace AssetPackage
         {
             if (!Types.ContainsKey(typename))
             {
-                Log(Severity.Verbose, "Caching Type FullName for {0}", typename);
+                Log(Severity.Verbose, "Caching Type for {0}", typename);
 
                 Type type = Type.GetType(typename);
 
@@ -579,6 +584,17 @@ namespace AssetPackage
             return false;
         }
 
+        /// <summary>
+        /// Loads a data.
+        /// </summary>
+        ///
+        /// <param name="model">    The model. </param>
+        /// <param name="location"> The location. </param>
+        /// <param name="format">   Describes the format to use. </param>
+        ///
+        /// <returns>
+        /// true if it succeeds, false if it fails.
+        /// </returns>
         public Boolean LoadData(String model, StorageLocations location, SerializingFormat format)
         {
             //! TODO Add binary parameter.
@@ -630,9 +646,9 @@ namespace AssetPackage
                                 }
                                 break;
 
-                            case SerializingFormat.Binary:
-                                // TODO Implement 
-                                break;
+                                //case SerializingFormat.Binary:
+                                //// TODO Implement 
+                                //break;
                         }
                     }
                     else
@@ -1029,6 +1045,18 @@ namespace AssetPackage
             return serialized.ToString();
         }
 
+        /// <summary>
+        /// Serialize XML.
+        /// </summary>
+        ///
+        /// <param name="serializer"> The serializer. </param>
+        /// <param name="root">       The root. </param>
+        /// <param name="location">   The location. </param>
+        /// <param name="format">     Describes the format to use. </param>
+        ///
+        /// <returns>
+        /// A String.
+        /// </returns>
         private String SerializeXml(ISerializer serializer, Node root, StorageLocations location, SerializingFormat format)
         {
             StringBuilder serialized = new StringBuilder();
@@ -1053,80 +1081,9 @@ namespace AssetPackage
 
                 INodeValue nodeValue;
 
-                //! 3) Adjust value to a String for Classes (not being a string).
-                // xx
-                //if (!(node.Value is String) && nt.IsClassFix() && nt.IsSerializableFix() && !nt.IsArray)
-                //{
-                //    //! Serialize Classes except Strings.
-                //    //
-                //    //! Serializes as a Json Class (not a String).
-                //    //! So we need to convert later.
-                //    //! TODO Cache these?
-                //    nodeValue = (INodeValue)Activator.CreateInstance(nodeValueType.MakeGenericType(nt));
-                //    nodeValue.SetValue(node.Value);
-
-                //    //"{\r\n  \"a\": 15,\r\n  \"b\": \"vijftien\",\r\n  \"c\": \"2016-04-21T00:05:04.4571539+02:00\"\r\n}",
-                //    // 
-                //    //! versus:
-                //    // 
-                //    //{
-                //    //"a": 15,
-                //    //"b": "vijftien",
-                //    //"c": "2016-04-21T00:00:33.4479899+02:00"
-                //    //}
-                //}
-                //else if (nt.IsArray)
-                //{
-                //    //! Serializes as a Json Array (not a String).
-                //    //! So we need to convert later. 
-
-                //    MethodInfo methodInfo = typeof(Enumerable).MethodInfoFix("ToList");
-                //    MethodInfo method = methodInfo.MakeGenericMethod(new Type[] { nt.GetElementType() });
-
-                //    Type listType = typeof(List<>).MakeGenericType(new Type[] { nt.GetElementType() });
-                //    nodeValue = (INodeValue)Activator.CreateInstance(nodeValueType.MakeGenericType(listType));
-
-                //    nodeValue.SetValue(method.Invoke(null, new Object[] { node.Value }));
-
-                //    //"[\r\n  1,\r\n  2,\r\n  3,\r\n  4,\r\n  5\r\n]"
-                //    // versus:
-                //    //[1,2,3,4,5]
-                //}
-                //else if (nt.IsPrimitiveFix())
-                //{
-                //    //! The primitive types are Boolean, Byte, SByte, Int16, UInt16, Int32, UInt32, Int64, UInt64, IntPtr, UIntPtr, Char, Double, and Single.
-                //    // 
-                //    nodeValue = new NodeValue<String>();
-
-                //    nodeValue.SetValue(node.Value.ToString());
-                //}
-                //else if (node.Value is DateTime)
-                //{
-                //    nodeValue = new NodeValue<String>();
-
-                //    nodeValue.SetValue(((DateTime)(node.Value)).ToString("O"));
-                //}
-                //else
-                //{
-                //#error Split this method for each format apart until it works.
-                //switch (format)
-                //{
-                //    case SerializingFormat.Json:
-                //        nodeValue = new NodeValue<String>();
-                //        nodeValue.SetValue(node.Value.ToString());
-                //        break;
-                //    case SerializingFormat.Xml:
                 String val = serializer.Serialize(node.Value, format);
                 nodeValue = new NodeValue<String>();
                 nodeValue.SetValue(val);
-                //break;
-                //    default:
-                //        // Should not happen
-                //        nodeValue = new NodeValue<String>();
-                //        break;
-                //}
-                //}
-
                 nodeValue.SetPath(node.Path);
                 nodeValue.SetValueType(nt.FullName);
 
@@ -1239,9 +1196,9 @@ namespace AssetPackage
 
             //! 1) Enumerate all deserialized nodes.
             // 
-            for (Int32 i = 0; i < sNodes.nodes.Length; i++)
+            for (Int32 i = 0; i < sNodes.Nodes.Length; i++)
             {
-                NodeStringValue nodeStringValue = sNodes.nodes[i];
+                NodeStringValue nodeStringValue = sNodes.Nodes[i];
 
                 //! 2) Problem, in Unity all serialized Value.Value's are empty (probably due to the object type in a NodeValue).
                 //!             so we now use 2 fields, Value for serializing and object for deserializing.
@@ -1334,12 +1291,6 @@ namespace AssetPackage
             // 
             NodeStringValues sNodes = (NodeStringValues)serializer.Deserialize<NodeStringValues>(data, format);
 
-            //#warning DEBUG Code
-            //            if (format == SerializingFormat.Xml)
-            //            {
-            //                NodeObjectValues test = (NodeObjectValues)serializer.Deserialize<NodeObjectValues>(data, format);
-            //            }
-
             //! This works without types[] paramaters as there is only a single matching method.
             //
             MethodInfo method = serializer.GetType().MethodInfoFix("Deserialize" /*, new Type[] { typeof(String), typeof(SerializingFormat) }*/);
@@ -1350,9 +1301,9 @@ namespace AssetPackage
 
             //! 1) Enumerate all deserialized nodes.
             // 
-            for (Int32 i = 0; i < sNodes.nodes.Length; i++)
+            for (Int32 i = 0; i < sNodes.Nodes.Length; i++)
             {
-                NodeStringValue nodeStringValue = sNodes.nodes[i];
+                NodeStringValue nodeStringValue = sNodes.Nodes[i];
 
                 //! 2) Problem, in Unity all serialized Value.Value's are empty (probably due to the object type in a NodeValue).
                 //!             so we now use 2 fields, Value for serializing and object for deserializing.
@@ -1375,28 +1326,8 @@ namespace AssetPackage
                 // 
                 nodeStringValue.Path = nodeStringValue.Path.Replace('|', '.');
 
-#warning Xml Specific Fixups Ahead!
-
-                // The "null" is because it's a static method
                 NodeObjectValue fixNodeValue = new NodeObjectValue();
 
-#warning TODO
-
-                //if (nodeStringValue.ValueType.Equals("System.String"))
-                //{
-                //    // No Fix.
-                //    fixNodeValue.ValueAsObject = nodeStringValue.Value;
-                //}
-                //else if (Types.ContainsKey(nodeStringValue.ValueType) && Types[nodeStringValue.ValueType].IsPrimitiveFix())
-                //{
-                //    fixNodeValue.ValueAsObject = Convert.ChangeType(nodeStringValue.Value, tt);
-                //}
-                //else if (Types.ContainsKey(nodeStringValue.ValueType) && Types[nodeStringValue.ValueType].IsValueType)
-                //{
-                //    fixNodeValue.ValueAsObject = Convert.ChangeType(nodeStringValue.Value, tt);
-                //}
-                //else
-                //{
                 //! Create a Generic Method to call the Deserializer.
                 // 
                 MethodInfo genericMethod = method.MakeGenericMethod(tt);
@@ -1407,15 +1338,11 @@ namespace AssetPackage
                 fixNodeValue.Path = nodeStringValue.Path;
                 fixNodeValue.ValueType = nodeStringValue.ValueType;
 
-                if (!fixNodeValue.ValueAsObject.GetType().FullName.Equals(fixNodeValue.ValueType))
+                if (fixNodeValue.ValueAsObject != null && !fixNodeValue.ValueAsObject.GetType().FullName.Equals(fixNodeValue.ValueType))
                 {
+                    Log(Severity.Verbose, "Casting {0} into {1}", fixNodeValue.ValueAsObject.GetType().Name, tt.Name);
                     fixNodeValue.ValueAsObject = Convert.ChangeType(fixNodeValue.ValueAsObject, tt);
                 }
-
-                //}
-                Log(Severity.Verbose, "{0} - {1}", fixNodeValue.ValueType, fixNodeValue.ValueAsObject);
-
-                //TODO Copy Value into string togeter with ValueType.
 
                 //! Update Tree by path (not very optimized yet).
                 // 
@@ -1743,6 +1670,7 @@ namespace AssetPackage
 
                 XmlWriterSettings settings = new XmlWriterSettings();
                 settings.OmitXmlDeclaration = true;
+                settings.Indent = true;
 
                 XmlSerializerNamespaces ns = new XmlSerializerNamespaces();
                 ns.Add("", "");

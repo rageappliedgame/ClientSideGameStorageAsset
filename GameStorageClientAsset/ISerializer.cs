@@ -20,16 +20,22 @@ namespace AssetPackage
     /// <summary>
     /// Values that represent serializable formats.
     /// </summary>
+    ///
+    /// <remarks>
+    /// Disabled Binary Support because of lack of support for PCL's.
+    /// </remarks>
     public enum SerializingFormat
     {
-        /// <summary>
-        /// An enum constant representing the binary option.
-        /// </summary>
-        Binary,
+        ///// <summary>
+        ///// An enum constant representing the binary option.
+        ///// </summary>
+        //Binary,
+
         /// <summary>
         /// An enum constant representing the XML option.
         /// </summary>
         Xml,
+
         /// <summary>
         /// An enum constant representing the JSON option.
         /// </summary>

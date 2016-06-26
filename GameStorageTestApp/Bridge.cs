@@ -508,8 +508,8 @@ namespace UserModel
         {
             switch (format)
             {
-                case SerializingFormat.Binary:
-                    return false;
+                //case SerializingFormat.Binary:
+                //    return false;
                 case SerializingFormat.Xml:
                     return false;
                 case SerializingFormat.Json:
