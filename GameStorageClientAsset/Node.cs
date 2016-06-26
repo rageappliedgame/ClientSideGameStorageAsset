@@ -165,7 +165,8 @@ namespace AssetPackage
         /// <summary>
         /// The type mapper cache.
         /// </summary>
-        private static Dictionary<String, Type> typeMapper = new Dictionary<String, Type>();
+        //[Obsolete]
+        //private static Dictionary<String, Type> typeMapper = new Dictionary<String, Type>();
 
 #warning DEBUG CODE!!!
         private static Boolean xmlStructureOnly = true;
@@ -245,25 +246,25 @@ namespace AssetPackage
             {
                 //! Preload Xsd simple types.
                 // 
-                typeMapper.Add("boolean", typeof(bool));                    //xsd
+                //typeMapper.Add("boolean", typeof(bool));                    //xsd
 
-                typeMapper.Add("dateTime", typeof(DateTime));               //xsd
+                //typeMapper.Add("dateTime", typeof(DateTime));               //xsd
 
-                typeMapper.Add("byte", typeof(sbyte));                      //xsd
-                typeMapper.Add("short", typeof(short));                     //xsd
-                typeMapper.Add("int", typeof(int));                         //xsd
-                typeMapper.Add("long", typeof(long));                       //xsd
+                //typeMapper.Add("byte", typeof(sbyte));                      //xsd
+                //typeMapper.Add("short", typeof(short));                     //xsd
+                //typeMapper.Add("int", typeof(int));                         //xsd
+                //typeMapper.Add("long", typeof(long));                       //xsd
 
-                typeMapper.Add("unsignedByte", typeof(Byte));               //xsd
-                typeMapper.Add("unsignedShort", typeof(ushort));            //xsd
-                typeMapper.Add("unsignedInt", typeof(uint));                //xsd
-                typeMapper.Add("unsignedLong", typeof(ulong));              //xsd
+                //typeMapper.Add("unsignedByte", typeof(Byte));               //xsd
+                //typeMapper.Add("unsignedShort", typeof(ushort));            //xsd
+                //typeMapper.Add("unsignedInt", typeof(uint));                //xsd
+                //typeMapper.Add("unsignedLong", typeof(ulong));              //xsd
 
-                typeMapper.Add("float", typeof(short));                     //xsd
-                typeMapper.Add("double", typeof(double));                   //xsd
-                typeMapper.Add("decimal", typeof(decimal));                 //xsd
+                //typeMapper.Add("float", typeof(short));                     //xsd
+                //typeMapper.Add("double", typeof(double));                   //xsd
+                //typeMapper.Add("decimal", typeof(decimal));                 //xsd
 
-                typeMapper.Add("string", typeof(string));                   //xsd
+                //typeMapper.Add("string", typeof(string));                   //xsd
 
                 //! Preload Simple types.
                 // 
@@ -290,16 +291,16 @@ namespace AssetPackage
                 //typeMapper.Add("unsignedLong", typeof(ulong));
 
                 //! Preload Xsd Array/List Types.
-                // 
-                typeMapper.Add("ArrayOfString", typeof(List<string>));
-                typeMapper.Add("ArrayOfBoolean", typeof(List<bool>));
-                typeMapper.Add("ArrayOfFloat", typeof(List<float>));
-                typeMapper.Add("ArrayOfDouble", typeof(List<double>));
-                typeMapper.Add("ArrayOfDecimal", typeof(List<decimal>));
-                typeMapper.Add("ArrayOfLong", typeof(List<long>));
-                typeMapper.Add("ArrayOfInt", typeof(List<int>));
-                typeMapper.Add("ArrayOfShort", typeof(List<short>));
-                typeMapper.Add("ArrayOfUnsignedByte", typeof(List<byte>));
+                //// 
+                //typeMapper.Add("ArrayOfString", typeof(List<string>));
+                //typeMapper.Add("ArrayOfBoolean", typeof(List<bool>));
+                //typeMapper.Add("ArrayOfFloat", typeof(List<float>));
+                //typeMapper.Add("ArrayOfDouble", typeof(List<double>));
+                //typeMapper.Add("ArrayOfDecimal", typeof(List<decimal>));
+                //typeMapper.Add("ArrayOfLong", typeof(List<long>));
+                //typeMapper.Add("ArrayOfInt", typeof(List<int>));
+                //typeMapper.Add("ArrayOfShort", typeof(List<short>));
+                //typeMapper.Add("ArrayOfUnsignedByte", typeof(List<byte>));
             }
             sw.Stop();
             //Log(Severity.Verbose, "Elapsed (Caching xml types): {0} ms", sw.ElapsedMilliseconds);
@@ -1209,7 +1210,7 @@ namespace AssetPackage
         /// <returns>
         /// The serializer.
         /// </returns>
-        private static XmlSerializer GetSerializer(Type type)
+        public static XmlSerializer GetSerializer(Type type)
         {
             if (!serializers.ContainsKey(type))
             {

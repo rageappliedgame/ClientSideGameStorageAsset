@@ -515,10 +515,10 @@ namespace UserModel
             List<byte> data = new List<byte>();
             data.AddRange(new byte[] { 1, 2, 3, 4, 5 });
             short[] sa = new short[] { 1, 2, 3, 4, 5 };
-            sa.ToList<short>();
+            //sa = sa.ToList<short>();
             Node F = root.AddChild("F", "F");
             //Node B = F.AddChild("B", data);
-            Node B = F.AddChild("B", new short[] { 1, 2, 3, 4, 5 });
+            Node B = F.AddChild("B", sa.ToList<short>());
             B.AddChild("A", DateTime.Now);
             B.AddChild("A1", new DemoClass
             {
@@ -697,7 +697,12 @@ namespace UserModel
 
         private void button2_Click(object sender, EventArgs e)
         {
-            storage.TestCode();
+            storage.TestCode(new DemoClass
+            {
+                a = 15,
+                b = "vijftien",
+                c = DateTime.Now
+            });
         }
     }
 }
