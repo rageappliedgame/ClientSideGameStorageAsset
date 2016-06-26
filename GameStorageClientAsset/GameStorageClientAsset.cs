@@ -835,9 +835,9 @@ namespace AssetPackage
                     switch (format)
                     {
                         case SerializingFormat.Json:
-                            return SerializeJson(serializer, Models[model], location, format);
+                            return SerializeDataJson(serializer, Models[model], location, format);
                         case SerializingFormat.Xml:
-                            return SerializeXml(serializer, Models[model], location, format);
+                            return SerializeDataXml(serializer, Models[model], location, format);
                     }
                 }
                 else
@@ -847,7 +847,7 @@ namespace AssetPackage
                     switch (format)
                     {
                         case SerializingFormat.Xml:
-                            return SerializeXml(new InternalXmlSerializer(), Models[model], location, format);
+                            return SerializeDataXml(new InternalXmlSerializer(), Models[model], location, format);
 
                         default:
                             Log(Severity.Warning, String.Format("ISerializer interface for {0} not found a Bridge", format));
@@ -873,9 +873,9 @@ namespace AssetPackage
         /// <param name="format">     Describes the format to use. </param>
         ///
         /// <returns>
-        /// A String.
+        /// A String containing Json.
         /// </returns>
-        private String SerializeJson(ISerializer serializer, Node root, StorageLocations location, SerializingFormat format)
+        private String SerializeDataJson(ISerializer serializer, Node root, StorageLocations location, SerializingFormat format)
         {
             StringBuilder serialized = new StringBuilder();
 
@@ -954,23 +954,8 @@ namespace AssetPackage
                 }
                 else
                 {
-                    //#error Split this method for each format apart until it works.
-                    switch (format)
-                    {
-                        case SerializingFormat.Json:
-                            nodeValue = new NodeValue<String>();
-                            nodeValue.SetValue(node.Value.ToString());
-                            break;
-                        case SerializingFormat.Xml:
-                            String val = serializer.Serialize(node.Value, format);
-                            nodeValue = new NodeValue<String>();
-                            nodeValue.SetValue(val);
-                            break;
-                        default:
-                            // Should not happen
-                            nodeValue = new NodeValue<String>();
-                            break;
-                    }
+                    nodeValue = new NodeValue<String>();
+                    nodeValue.SetValue(node.Value.ToString());
                 }
 
                 nodeValue.SetPath(node.Path);
@@ -1055,9 +1040,9 @@ namespace AssetPackage
         /// <param name="format">     Describes the format to use. </param>
         ///
         /// <returns>
-        /// A String.
+        /// A String containing Xml.
         /// </returns>
-        private String SerializeXml(ISerializer serializer, Node root, StorageLocations location, SerializingFormat format)
+        private String SerializeDataXml(ISerializer serializer, Node root, StorageLocations location, SerializingFormat format)
         {
             StringBuilder serialized = new StringBuilder();
 
@@ -1077,8 +1062,6 @@ namespace AssetPackage
 #warning TODO: Not optimal location for nodeValue & nt inside the loop, but usefull during debugging.
                 Type nt = node.Value.GetType();
 
-                String json = String.Empty;
-
                 INodeValue nodeValue;
 
                 String val = serializer.Serialize(node.Value, format);
@@ -1087,55 +1070,9 @@ namespace AssetPackage
                 nodeValue.SetPath(node.Path);
                 nodeValue.SetValueType(nt.FullName);
 
-                json = serializer.Serialize(nodeValue, format);
+                String xml = serializer.Serialize(nodeValue, format);
 
-                switch (format)
-                {
-                    case SerializingFormat.Json:
-                        //! Fixups for classes and arrays.
-                        // 
-                        if (jsonValue.IsMatch(json))
-                        {
-                            Match m = jsonValue.Match(json);
-
-                            //m.Index, m.Length
-                            String cls = m.Groups[1].Value;
-
-                            cls = cls.Replace("\r", "\\r");
-                            cls = cls.Replace("\n", "\\n");
-                            cls = cls.Replace("\"", "\\\"");
-
-                            json = json.Remove(m.Index, m.Length);
-                            json = json.Insert(m.Index, String.Format("\"Value\": \"{0}\"", cls));
-                        }
-                        else if (jsonArray.IsMatch(json))
-                        {
-                            Match m = jsonArray.Match(json);
-
-                            //m.Index, m.Length
-                            String cls = m.Groups[1].Value;
-
-                            cls = cls.Replace("\r", "\\r");
-                            cls = cls.Replace("\n", "\\n");
-                            cls = cls.Replace("\"", "\\\"");
-
-                            json = json.Remove(m.Index, m.Length);
-                            json = json.Insert(m.Index, String.Format("\"Value\": \"{0}\"", cls));
-                        }
-
-                        break;
-                    case SerializingFormat.Xml:
-                        //String v = serializer.Serialize(nodeValue.GetValue(), format);
-
-                        //json = serializer.Serialize(nodeValue, format);
-
-                        //! Surround content of Value tag with <![CDATA[ and ]]>
-                        //DecoderReplacementFallback contents
-                        // json = json.Replace("<Value>", "<Value><![CDATA[").Replace("</Value>", "]]></Value>");
-                        break;
-                }
-
-                serialized.Append(String.Format("{0}", json));
+                serialized.Append(String.Format("{0}", xml));
 
                 //! 5) Write separator if any.
                 // 
@@ -1180,7 +1117,7 @@ namespace AssetPackage
         /// <param name="data">       The data. </param>
         /// <param name="location">   The location. </param>
         /// <param name="format">     Describes the format to use. </param>
-        private void DeserializeJson(ISerializer serializer, Node root, String data, StorageLocations location, SerializingFormat format)
+        private void DeserializeDataJson(ISerializer serializer, Node root, String data, StorageLocations location, SerializingFormat format)
         {
             //! Get a list of things to deserialize.
             // 
@@ -1285,7 +1222,7 @@ namespace AssetPackage
         /// <param name="data">       The data. </param>
         /// <param name="location">   The location. </param>
         /// <param name="format">     Describes the format to use. </param>
-        private void DeserializeXml(ISerializer serializer, Node root, String data, StorageLocations location, SerializingFormat format)
+        private void DeserializeDataXml(ISerializer serializer, Node root, String data, StorageLocations location, SerializingFormat format)
         {
             //! Get a list of things to deserialize.
             // 
@@ -1373,10 +1310,10 @@ namespace AssetPackage
                     switch (format)
                     {
                         case SerializingFormat.Json:
-                            DeserializeJson(serializer, Models[model], data, location, format);
+                            DeserializeDataJson(serializer, Models[model], data, location, format);
                             break;
                         case SerializingFormat.Xml:
-                            DeserializeXml(serializer, Models[model], data, location, format);
+                            DeserializeDataXml(serializer, Models[model], data, location, format);
                             break;
                     }
                 }
@@ -1387,7 +1324,7 @@ namespace AssetPackage
                     switch (format)
                     {
                         case SerializingFormat.Xml:
-                            DeserializeXml(new InternalXmlSerializer(), Models[model], data, location, format);
+                            DeserializeDataXml(new InternalXmlSerializer(), Models[model], data, location, format);
                             break;
                         default:
                             Log(Severity.Warning, String.Format("ISerializer interface for {0} not found a Bridge", format));

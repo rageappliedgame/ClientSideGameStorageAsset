@@ -1234,17 +1234,26 @@ namespace AssetPackage
         {
             using (StringWriterUtf8 textWriter = new StringWriterUtf8())
             {
-#warning DEBUG CODE
-                xmlStructureOnly = structureOnly;
+                XmlWriterSettings settings = new XmlWriterSettings();
+                settings.OmitXmlDeclaration = true;
+                settings.Indent = true;
+
+                XmlSerializerNamespaces ns = new XmlSerializerNamespaces();
+                ns.Add("", "");
 
                 XmlSerializer ser = GetSerializer(GetType());
 
-                ser.Serialize(textWriter, this);
+                using (XmlWriter tw = XmlWriter.Create(textWriter, settings))
+                {
+#warning DEBUG CODE
+                    xmlStructureOnly = structureOnly;
+
+                    ser.Serialize(tw, this, ns);
+#warning DEBUG CODE
+                    xmlStructureOnly = true;
+                }
 
                 textWriter.Flush();
-
-#warning DEBUG CODE
-                xmlStructureOnly = true;
 
                 return textWriter.ToString();
             }
