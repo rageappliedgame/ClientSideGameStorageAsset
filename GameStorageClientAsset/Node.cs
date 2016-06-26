@@ -1243,41 +1243,12 @@ namespace AssetPackage
 
                 textWriter.Flush();
 
+#warning DEBUG CODE
                 xmlStructureOnly = true;
 
                 return textWriter.ToString();
             }
         }
-
-        /*
-        /// <summary>
-        /// Converts this object's Value to an XML.
-        /// </summary>
-        ///
-        /// <returns>
-        /// This object as a String.
-        /// </returns>
-        [Obsolete]
-        public String ToXmlValue()
-        {
-            if (Value != null)
-            {
-                using (StringWriterUtf8 textWriter = new StringWriterUtf8())
-                {
-                    using (NodeXmlWriter valueWriter = new NodeXmlWriter(textWriter))
-                    {
-                        GetSerializer(Value.GetType()).Serialize(valueWriter, this.Value);
-
-                        return textWriter.ToString();
-                    }
-                }
-            }
-            else
-            {
-                return String.Empty;
-            }
-        }
-        */
 
 #if BINARY
         /// <summary>

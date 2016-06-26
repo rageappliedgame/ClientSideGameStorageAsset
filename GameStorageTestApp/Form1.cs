@@ -231,6 +231,8 @@ namespace UserModel
 
             storage.LoadData("Wiki", StorageLocations.Local, SerializingFormat.Xml);
 
+            textBox2.Text = storage["Wiki"].ToXml(false);
+
             if (storage.Connected)
             {
                 //{
@@ -320,9 +322,13 @@ namespace UserModel
 
             storage.SaveData("Wiki", StorageLocations.Local, SerializingFormat.Xml);
 
+            textBox1.Text = storage["Wiki"].ToXml(false);
+
             if (storage.Connected)
             {
                 storage.SaveData("Wiki", StorageLocations.Server, SerializingFormat.Json);
+
+                textBox1.Text = storage["Wiki"].ToXml(false);
             }
             else
             {
