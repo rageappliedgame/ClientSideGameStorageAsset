@@ -35,40 +35,6 @@ namespace AssetPackage
     using AssetManagerPackage;
     #region Enumerations
 
-    // DONE Storage Type (per node and add inherited).
-    // DONE Add Storage Type Filter option to PrefixEnumerator.
-    // DONE Xml De-Serialization
-    // DONE Xml Serialization
-    // DONE Binary De-Serialization
-    // DONE Binary Serialization
-    // DONE Utility Methods like Clear().
-    // DONE Tie to IVirtualProperty Interface
-    // DONE Rename asset to GameStorageClientAsset.
-    // 
-    // TODO Decide: Skip Root Item in Prefix/PostFix Enumerators?
-    // TODO Add search for Path.
-    // TODO Read-Only flag
-    // 
-    // TODO Tie to UCM Tracker/GameStorage.
-    // TODO Add AddSibling() Method to make definitions more fluid?
-    //
-    // TODO Json De-Serialization (use external serializer like NewtonSoft.net that comes with an MIT license)?
-    // TODO Json Serialization
-    //
-    // TODO Test performance without generic parameter & casting.
-    //
-    // TODO Extend Json Serialization (now a flat array of path/(xml)value).
-    //      Define a interface IJson for this?
-    //
-    // ISSUE When doing ToXml() the code seems to be using some kind of copy as Purpose and Owner are no longer set.
-    //       This gives issues with the Value property.
-    // ISSUE Supplying data during tree construction to Nodes with a StorageLocation Game (or inherited) is possible but illegal.
-    //       Maybe add some checks for it.
-    //
-    //! Serialize Structure with Xml/Binary, values with Json (so a simple format like "node: { path: xx; value: yy}")
-    //! Data types zijn ValueType (no quotes), Dates (formattted) en de rest strings & lists/arrays.
-    //! Als we Xml-Json conversie gebruiken moet het format moet bi-directioneel zijn. bv @ prefix voor attributen
-
     // StorageType.Local:
     //     Can change isDirty.
     //     Is serialized including a value.
