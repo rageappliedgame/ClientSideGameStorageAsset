@@ -21,5 +21,4 @@ Xml Serialization tends to turn all generic lists into arrays.
 Note: Binary serialization was forseen also but has issues with PCL (Portable Class Libraries) 
       and is therefor currently disabled.
 
-Note: The structure is at the moment stored as base64 encoding Xml when using the RAGE Game Storage Server. 
-      This might change in the near future.
+Note: The structure is now saved in a format6 alike the data (so no longer as base64 encoded xml embedded in json).
