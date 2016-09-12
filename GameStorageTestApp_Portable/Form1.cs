@@ -257,7 +257,7 @@ namespace UserModel
                 //  ]
                 //}
 
-                textBox1.Text = storage["Wiki"].ToXml(false);
+                textBox1.Text = storage["Wiki"].ToString(false);
 
                 //! Clear is performed internally in LoadData().
                 //
@@ -272,7 +272,7 @@ namespace UserModel
                     Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
                 }
 
-                textBox2.Text = storage["Wiki"].ToXml(false);
+                textBox2.Text = storage["Wiki"].ToString(false);
             }
             else
             {
@@ -284,8 +284,8 @@ namespace UserModel
         /// Event handler. Called by btnLoadStructure for click events.
         /// </summary>
         ///
-        /// <param name="sender"> Source of the event. </param>
-        /// <param name="e">      Event information. </param>
+        /// <param name="sender">    Source of the event. </param>
+        /// <param name="e">         Event information. </param>
         private void btnLoadStructure_Click(object sender, EventArgs e)
         {
             textBox1.Clear();
@@ -297,13 +297,13 @@ namespace UserModel
             {
                 sw.Reset();
                 sw.Start();
-                storage.LoadStructure("Test", StorageLocations.Local);
+                storage.LoadStructure("Test", StorageLocations.Local, SerializingFormat.Xml);
                 sw.Stop();
                 Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
             }
 
-            textBox1.Text = storage["Test"].ToXml(false);
-            textBox2.Text = storage["Test"].ToXml(true);
+            textBox1.Text = storage["Test"].ToString(false);
+            textBox2.Text = storage["Test"].ToString(true);
         }
 
         /// <summary>
@@ -342,17 +342,17 @@ namespace UserModel
                 {
                     //! Structure + Data.
                     //
-                    textBox1.Text = storage[kvp.Key].ToXml(false);
+                    textBox1.Text = storage[kvp.Key].ToString(false);
 
                     storage.DeleteStructure(kvp.Key, StorageLocations.Server);
 
-                    storage.SaveStructure(kvp.Key, StorageLocations.Server);
+                    storage.SaveStructure(kvp.Key, StorageLocations.Server, SerializingFormat.Json);
                     storage[kvp.Key].Clear();
-                    storage.LoadStructure(kvp.Key, StorageLocations.Server);
+                    storage.LoadStructure(kvp.Key, StorageLocations.Server, SerializingFormat.Json);
 
                     //! Structure Only.
                     //
-                    textBox2.Text = storage[kvp.Key].ToXml(false);
+                    textBox2.Text = storage[kvp.Key].ToString(false);
                 }
             }
             else
@@ -385,7 +385,7 @@ namespace UserModel
             {
                 sw.Reset();
                 sw.Start();
-                textBox1.Text = storage["Test"].ToXml(false);
+                textBox1.Text = storage["Test"].ToString(false);
                 sw.Stop();
                 Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
             }
@@ -396,7 +396,7 @@ namespace UserModel
             {
                 sw.Reset();
                 sw.Start();
-                storage.SaveStructure("Test", StorageLocations.Local);
+                storage.SaveStructure("Test", StorageLocations.Local, SerializingFormat.Xml);
                 sw.Stop();
                 Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
             }
@@ -660,6 +660,12 @@ namespace UserModel
 
         #endregion Nested Types
 
+        /// <summary>
+        /// Event handler. Called by button1 for click events.
+        /// </summary>
+        ///
+        /// <param name="sender">   Source of the event. </param>
+        /// <param name="e">        Event information. </param>
         private void button1_Click(object sender, EventArgs e)
         {
             BuildDemo();
@@ -673,7 +679,7 @@ namespace UserModel
                 Debug.Print("JSon serialize Elapsed: {0} ms", sw.ElapsedMilliseconds);
             }
 
-            textBox1.Text = storage["Wiki"].ToXml(false);
+            textBox1.Text = storage["Wiki"].ToString(false);
 
             storage["Wiki"]["F"].Value = 42;
             {
@@ -684,7 +690,7 @@ namespace UserModel
                 Debug.Print("JSon deserialize Elapsed: {0} ms", sw.ElapsedMilliseconds);
             }
 
-            textBox2.Text = storage["Wiki"].ToXml(false);
+            textBox2.Text = storage["Wiki"].ToString(false);
         }
     }
 }

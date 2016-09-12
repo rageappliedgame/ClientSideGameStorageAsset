@@ -18,9 +18,10 @@
 namespace UserModel
 {
     using System;
-    using System.Linq;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.IO;
+    using System.Linq;
     using System.Text.RegularExpressions;
     using System.Windows.Forms;
 
@@ -91,51 +92,6 @@ namespace UserModel
         #endregion Constructors
 
         #region Methods
-
-        /// <summary>
-        /// Event handler. Called by btnBinarySaveLoad for click events.
-        /// </summary>
-        ///
-        /// <param name="sender"> Source of the event. </param>
-        /// <param name="e">      Event information. </param>
-        private void btnBinarySaveLoad_Click(object sender, EventArgs e)
-        {
-            //    BuildDemo();
-
-            //    textBox1.Clear();
-            //    textBox2.Clear();
-
-            //    String base64 = String.Empty;
-
-            //    Stopwatch sw = new Stopwatch();
-
-            //    {
-            //        sw.Reset();
-            //        sw.Start();
-
-            //        base64 = storage["Test"].ToBinary(false);
-
-            //        Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
-            //    }
-
-            //    Debug.Print(base64);
-
-            //    storage["Test"].Clear();
-            //    {
-            //        sw.Reset();
-            //        sw.Start();
-
-            //        storage["Test"].FromBinary(base64, false);
-
-            //        Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
-            //    }
-            //    Debug.Print(storage["Test"].Purpose);
-
-            //    textBox1.Text = storage["Test"].ToXml(false);
-            //    textBox2.Text = storage["Test"].ToXml();
-
-            //    Debug.Print(storage["Test"].Purpose);
-        }
 
         /// <summary>
         /// Event handler. Called by btnConnect for click events.
@@ -223,15 +179,11 @@ namespace UserModel
         /// Event handler. Called by btnLoadData for click events.
         /// </summary>
         ///
-        /// <param name="sender"> Source of the event. </param>
-        /// <param name="e">      Event information. </param>
+        /// <param name="sender">   Source of the event. </param>
+        /// <param name="e">        Event information. </param>
         private void btnLoadData_Click(object sender, EventArgs e)
         {
             BuildDemo();
-
-            storage.LoadData("Wiki", StorageLocations.Local, SerializingFormat.Xml);
-
-            textBox2.Text = storage["Wiki"].ToXml(false);
 
             if (storage.Connected)
             {
@@ -261,11 +213,10 @@ namespace UserModel
                 //  ]
                 //}
 
-                textBox1.Text = storage["Wiki"].ToXml(false);
 
                 //! Clear is performed internally in LoadData().
                 //
-                //storage["Wiki"].ClearData(StorageLocations.Server);
+                storage["Wiki"].ClearData(StorageLocations.Server);
 
                 Stopwatch sw = new Stopwatch();
                 {
@@ -276,38 +227,14 @@ namespace UserModel
                     Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
                 }
 
-                textBox2.Text = storage["Wiki"].ToXml(false);
+                // Show Structure and Data
+                textBox1.Text = storage["Wiki"].ToString(true, SerializingFormat.Json);
+                textBox2.Text = storage["Wiki"].ToString(false, SerializingFormat.Json);
             }
             else
             {
                 MessageBox.Show("Not Connected");
             }
-        }
-
-        /// <summary>
-        /// Event handler. Called by btnLoadStructure for click events.
-        /// </summary>
-        ///
-        /// <param name="sender"> Source of the event. </param>
-        /// <param name="e">      Event information. </param>
-        private void btnLoadStructure_Click(object sender, EventArgs e)
-        {
-            textBox1.Clear();
-            textBox2.Clear();
-
-            BuildDemo();
-
-            Stopwatch sw = new Stopwatch();
-            {
-                sw.Reset();
-                sw.Start();
-                storage.LoadStructure("Test", StorageLocations.Local);
-                sw.Stop();
-                Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
-            }
-
-            textBox1.Text = storage["Test"].ToXml(false);
-            textBox2.Text = storage["Test"].ToXml(true);
         }
 
         /// <summary>
@@ -322,13 +249,13 @@ namespace UserModel
 
             storage.SaveData("Wiki", StorageLocations.Local, SerializingFormat.Xml);
 
-            textBox1.Text = storage["Wiki"].ToXml(false);
+            textBox1.Text = storage["Wiki"].ToString(false, SerializingFormat.Json);
 
             if (storage.Connected)
             {
                 storage.SaveData("Wiki", StorageLocations.Server, SerializingFormat.Json);
 
-                textBox1.Text = storage["Wiki"].ToXml(false);
+                textBox1.Text = storage["Wiki"].ToString(false, SerializingFormat.Json);
             }
             else
             {
@@ -352,66 +279,23 @@ namespace UserModel
                 {
                     //! Structure + Data.
                     //
-                    textBox1.Text = storage[kvp.Key].ToXml(true);
+                    textBox1.Text = storage[kvp.Key].ToString(true, SerializingFormat.Json);
 
                     storage.DeleteStructure(kvp.Key, StorageLocations.Server);
 
-                    storage.SaveStructure(kvp.Key, StorageLocations.Server);
+                    storage.SaveStructure(kvp.Key, StorageLocations.Server, SerializingFormat.Json);
                     storage[kvp.Key].Clear();
-                    storage.LoadStructure(kvp.Key, StorageLocations.Server);
+                    storage.LoadStructure(kvp.Key, StorageLocations.Server, SerializingFormat.Json);
 
                     //! Structure Only.
                     //
-                    textBox2.Text = storage[kvp.Key].ToXml(true);
+                    textBox2.Text = storage[kvp.Key].ToString(true, SerializingFormat.Json);
                 }
             }
             else
             {
                 MessageBox.Show("Not Connected");
             }
-        }
-
-        /// <summary>
-        /// Event handler. Called by btnSaveStructure for click events.
-        /// </summary>
-        ///
-        /// <param name="sender"> Source of the event. </param>
-        /// <param name="e">      Event information. </param>
-        private void btnSaveStructure_Click(object sender, EventArgs e)
-        {
-            textBox1.Clear();
-            textBox2.Clear();
-
-            BuildDemo();
-
-            Stopwatch sw = new Stopwatch();
-            {
-                sw.Reset();
-                sw.Start();
-                //textBox2.Text = storage["Test"].ToXml();
-                sw.Stop();
-                Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
-            }
-            {
-                sw.Reset();
-                sw.Start();
-                textBox1.Text = storage["Test"].ToXml(false);
-                sw.Stop();
-                Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
-            }
-
-            //GameStorageAsset x = usermodel.ResolveStorage("Hints.Test.Age");
-
-            //Object value = usermodel.ResolveValue(("Hints.Test.Age"));
-            {
-                sw.Reset();
-                sw.Start();
-                storage.SaveStructure("Test", StorageLocations.Local);
-                sw.Stop();
-                Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
-            }
-
-            Debug.Print("{0}={1}", "Hints.Test.Age", storage["User"]["Age"]);
         }
 
         /// <summary>
@@ -501,6 +385,52 @@ namespace UserModel
             WikiExampleTree(storage["Wiki"]);
         }
 
+        private void btnSaveStructure_Click(object sender, EventArgs e)
+        {
+            BuildDemo();
+
+            Stopwatch sw = new Stopwatch();
+            {
+                sw.Reset();
+                sw.Start();
+                storage.SaveStructure("Wiki", StorageLocations.Local, SerializingFormat.Json);
+                sw.Stop();
+                Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
+
+                textBox1.Text = storage["Wiki"].ToString(false);
+
+                sw.Reset();
+                sw.Start();
+                storage.SaveStructure("Wiki", StorageLocations.Local, SerializingFormat.Xml);
+                sw.Stop();
+                Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
+
+                textBox2.Text = storage["Wiki"].ToString(false);
+            }
+        }
+
+        private void btnLoadStructure_Click(object sender, EventArgs e)
+        {
+            Stopwatch sw = new Stopwatch();
+            {
+                sw.Reset();
+                sw.Start();
+                storage.LoadStructure("Wiki", StorageLocations.Local, SerializingFormat.Xml);
+                sw.Stop();
+                Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
+
+                textBox1.Text = storage["Wiki"].ToString(true);
+
+                sw.Reset();
+                sw.Start();
+                storage.LoadStructure("Wiki", StorageLocations.Local, SerializingFormat.Json);
+                sw.Stop();
+                Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
+
+                textBox2.Text = storage["Wiki"].ToString(true);
+            }
+        }
+
         /// <summary>
         /// Build Wiki example tree.
         /// 
@@ -515,7 +445,7 @@ namespace UserModel
             root.Clear();
 
             //! Data Still Fails (as it's serialized as an Array).
-            // 
+            //
             List<byte> data = new List<byte>();
             data.AddRange(new byte[] { 1, 2, 3, 4, 5 });
             short[] sa = new short[] { 1, 2, 3, 4, 5 };
@@ -667,46 +597,5 @@ namespace UserModel
         }
 
         #endregion Nested Types
-
-        private void button1_Click(object sender, EventArgs e)
-        {
-            BuildDemo();
-
-            Stopwatch sw = new Stopwatch();
-            {
-                sw.Reset();
-                sw.Start();
-                storage.SaveData("Wiki", StorageLocations.Local, SerializingFormat.Json);
-                sw.Stop();
-                Debug.Print("JSon serialize Elapsed: {0} ms", sw.ElapsedMilliseconds);
-            }
-
-            textBox1.Text = storage["Wiki"].ToXml(false);
-
-            //foreach (Node node in storage["Wiki"].Children)
-            //{
-            //}
-
-            storage["Wiki"]["F"].Value = 42;
-            {
-                sw.Reset();
-                sw.Start();
-                storage.LoadData("Wiki", StorageLocations.Local, SerializingFormat.Json);
-                sw.Stop();
-                Debug.Print("JSon deserialize Elapsed: {0} ms", sw.ElapsedMilliseconds);
-            }
-
-            textBox2.Text = storage["Wiki"].ToXml(false);
-        }
-
-        private void button2_Click(object sender, EventArgs e)
-        {
-            storage.TestCode(new DemoClass
-            {
-                a = 15,
-                b = "vijftien",
-                c = DateTime.Now
-            });
-        }
     }
 }

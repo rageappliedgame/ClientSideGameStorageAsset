@@ -18,7 +18,135 @@
 namespace AssetPackage
 {
     using System;
+    using System.Collections.Generic;
+    using System.ComponentModel;
     using System.Xml.Serialization;
+
+    /// </remarks>
+    [XmlRoot("Model")]
+    public class NodePaths
+    {
+        public NodePaths()
+        {
+            Nodes = new List<NodePath>();
+        }
+
+        [XmlArray("Nodes")]
+        //[XmlArrayItem("Node")]
+        //[XmlArrayItem("NodeStructure")]
+        //[XmlArrayItem("NodeRootStructure")]
+        //[XmlElement("NodePath", typeof(NodePath))]
+        public List<NodePath> Nodes;
+    }
+
+    public class NodePath
+    {
+        /// <summary>
+        /// Full pathname of the file.
+        /// </summary>
+        public String Path;
+
+        /// <summary>
+        /// The purpose.
+        /// </summary>
+        //[XmlAttribute]
+        [DefaultValue("")]
+        public String Purpose;
+
+        /// <summary>
+        /// The location.
+        /// </summary>
+        //[XmlAttribute]
+        [DefaultValue(StorageLocations.Inherited)]
+        public StorageLocations Location;
+
+        /// <summary>
+        /// Default constructor.
+        /// </summary>
+        public NodePath()
+        {
+            this.Path = String.Empty;
+            this.Purpose = String.Empty;
+            this.Location = StorageLocations.Inherited;
+        }
+
+        public NodePath(String Path)
+            : this()
+        {
+            this.Path = Path;
+        }
+        public NodePath(String Path, StorageLocations Location)
+            : this(Path)
+        {
+            this.Location = Location;
+        }
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        ///
+        /// <param name="Path">     Full pathname of the file. </param>
+        /// <param name="Location"> The location. </param>
+        /// <param name="Purpose">  Full pathname of the file. </param>
+        public NodePath(String Path, StorageLocations Location, String Purpose)
+            : this(Path, Location)
+        {
+            this.Purpose = Purpose;
+        }
+    }
+
+    //public class NodeStructure : NodePath
+    //{
+    //    /// <summary>
+    //    /// The location.
+    //    /// </summary>
+    //    public StorageLocations Location;
+
+    //    /// <summary>
+    //    /// Default constructor.
+    //    /// </summary>
+    //    public NodeStructure() : base()
+    //    {
+    //        this.Location = StorageLocations.Inherited;
+    //    }
+
+    //    /// <summary>
+    //    /// Constructor.
+    //    /// </summary>
+    //    ///
+    //    /// <param name="Path">     Full pathname of the file. </param>
+    //    /// <param name="Location"> The location. </param>
+    //    public NodeStructure(String Path, StorageLocations Location) : base(Path)
+    //    {
+    //        this.Location = Location;
+    //    }
+    //}
+
+    //public class NodeRootStructure : NodeStructure
+    //{
+    //    /// <summary>
+    //    /// Full pathname of the file.
+    //    /// </summary>
+    //    public String Purpose;
+
+    //    /// <summary>
+    //    /// Default constructor.
+    //    /// </summary>
+    //    public NodeRootStructure() : base()
+    //    {
+    //    }
+
+    //    /// <summary>
+    //    /// Constructor.
+    //    /// </summary>
+    //    ///
+    //    /// <param name="Path">     Full pathname of the file. </param>
+    //    /// <param name="Location"> The location. </param>
+    //    /// <param name="Purpose">  Full pathname of the file. </param>
+    //    public NodeRootStructure(String Path, StorageLocations Location, String Purpose) : base(Path, Location)
+    //    {
+    //        this.Purpose = Purpose;
+    //    }
+    //}
 
     /// <summary>
     /// Interface for node value classes.

@@ -96,8 +96,8 @@
   <PropertyGroup>
     <PostBuildEvent>cmd /c "c:\Program Files (x86)\Mono\bin\pdb2mdb.bat" ModelAsset.dll
 cmd /c "c:\Program Files (x86)\Mono\bin\pdb2mdb.bat" RageAssetManager.dll
-cmd /c copy *.dll "C:\Users\Public\Documents\Unity Projects\UITests\Assets"
-cmd /c copy *.dll.mdb "C:\Users\Public\Documents\Unity Projects\UITests\Assets"</PostBuildEvent>
+cmd /c copy *.dll "C:\Unity\UITests\Assets"
+cmd /c copy *.dll.mdb "C:\Unity\UITests\Assets"</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

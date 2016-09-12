@@ -21,18 +21,12 @@ namespace AssetPackage
     using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
-    using System.IO;
-    using System.Runtime.Serialization;
 #if PORTABLE
     using AssetManagerPackage; //fixup for missing ISerializable interface
 #else
     using System.Runtime.Serialization.Formatters.Binary;
 #endif
-    using System.Text;
-    using System.Xml;
-    using System.Xml.Schema;
-    using System.Xml.Serialization;
-    using AssetManagerPackage;
+
     #region Enumerations
 
     // StorageType.Local:
@@ -90,13 +84,15 @@ namespace AssetPackage
 
     #endregion Enumerations
 
-    [XmlRoot("node")]
 #if PORTABLE
 #else
     [Serializable]
 #endif
     [DebuggerDisplay("Name={Name}, Path={Path}, Count={Count}")]
-    public class Node : IEqualityComparer, IXmlSerializable
+    public class Node : IEqualityComparer
+#if XML
+        , IXmlSerializable 
+#endif
 #if BINARY
 , ISerializable
 #endif
@@ -124,20 +120,6 @@ namespace AssetPackage
         private Object value = null;
 
         /// <summary>
-        /// The XmlSerializer cache.
-        /// </summary>
-        private static Dictionary<Type, XmlSerializer> serializers = new Dictionary<Type, XmlSerializer>();
-
-        /// <summary>
-        /// The type mapper cache.
-        /// </summary>
-        //[Obsolete]
-        //private static Dictionary<String, Type> typeMapper = new Dictionary<String, Type>();
-
-#warning DEBUG CODE!!!
-        private static Boolean xmlStructureOnly = true;
-
-        /// <summary>
         /// The owner, only valid on Root Node.
         /// </summary>
         private GameStorageClientAsset Owner = null;
@@ -148,7 +130,7 @@ namespace AssetPackage
         public String Purpose
         {
             get;
-            private set;
+            internal set;
         }
 
         #endregion Fields
@@ -160,116 +142,7 @@ namespace AssetPackage
         /// </summary>
         static Node()
         {
-            //! Preload Nodeit self (very costly).
-
-            //Elapsed(Caching Serializers): 865 ms
-            //Elapsed (Caching types): 0 ms
-            //Caching Serializer for DateTime
-            //Caching Serializer for DemoStruct
-            //Caching Serializer for Byte
-            //Caching Serializer for List`1
-            //Caching Serializer for String[]
-            //Elapsed: 689 ms
-
-            Stopwatch sw = new Stopwatch();
-
-#warning creating the serializers for Node<T> adn List<String> is very costly (1.5 seconds)!
-
-            sw.Reset();
-            sw.Start();
-            {
-                // 750 ms for Node
-                // 
-                //! These class/list/array based ones now give a 'File Not Found' Exception
-                //! Solution 1) (NOT WORKING)   Just change the Generate serialization assembly drop-down to "On", instead of "Auto".
-                //! Solution 2) (WORKING)       Use another method.
-
-                // serializers.Add(typeof(Node), new XmlSerializer(typeof(Node)));
-                // serializers.Add(typeof(List<Node>), new XmlSerializer(typeof(List<Node>)));
-                serializers.Add(typeof(Node), XmlSerializer.FromTypes(new[] { typeof(Node) })[0]);
-                serializers.Add(typeof(List<Node>), XmlSerializer.FromTypes(new[] { typeof(List<Node>) })[0]);
-
-                // 1150 ms for List<String>
-                //serializers.Add(typeof(List<String>), new XmlSerializer(typeof(List<String>)));
-                //serializers.Add(typeof(String[]), new XmlSerializer(typeof(String[])));
-                // 1725 ms for both
-                // 
-
-                serializers.Add(typeof(String), new XmlSerializer(typeof(String)));
-                serializers.Add(typeof(Boolean), new XmlSerializer(typeof(Boolean)));
-                serializers.Add(typeof(Byte), new XmlSerializer(typeof(Byte)));
-                serializers.Add(typeof(Int16), new XmlSerializer(typeof(Int16)));
-                serializers.Add(typeof(Int32), new XmlSerializer(typeof(Int32)));
-                serializers.Add(typeof(Double), new XmlSerializer(typeof(Double)));
-                serializers.Add(typeof(DateTime), new XmlSerializer(typeof(DateTime)));
-            }
-            sw.Stop();
-
-            // Log(Severity.Verbose, "Elapsed (Caching XmlSerializers): {0} ms", sw.ElapsedMilliseconds);
-
-            sw.Reset();
-            sw.Start();
-            {
-                //! Preload Xsd simple types.
-                // 
-                //typeMapper.Add("boolean", typeof(bool));                    //xsd
-
-                //typeMapper.Add("dateTime", typeof(DateTime));               //xsd
-
-                //typeMapper.Add("byte", typeof(sbyte));                      //xsd
-                //typeMapper.Add("short", typeof(short));                     //xsd
-                //typeMapper.Add("int", typeof(int));                         //xsd
-                //typeMapper.Add("long", typeof(long));                       //xsd
-
-                //typeMapper.Add("unsignedByte", typeof(Byte));               //xsd
-                //typeMapper.Add("unsignedShort", typeof(ushort));            //xsd
-                //typeMapper.Add("unsignedInt", typeof(uint));                //xsd
-                //typeMapper.Add("unsignedLong", typeof(ulong));              //xsd
-
-                //typeMapper.Add("float", typeof(short));                     //xsd
-                //typeMapper.Add("double", typeof(double));                   //xsd
-                //typeMapper.Add("decimal", typeof(decimal));                 //xsd
-
-                //typeMapper.Add("string", typeof(string));                   //xsd
-
-                //! Preload Simple types.
-                // 
-                //typeMapper.Add("bool", typeof(bool));
-                //typeMapper.Add("char", typeof(char));
-                //typeMapper.Add("sbyte", typeof(sbyte));
-                //typeMapper.Add("datetimeoffset", typeof(DateTimeOffset));
-                //typeMapper.Add("int32", typeof(int));
-
-                //typeMapper.Add("int64", typeof(long));
-
-                //typeMapper.Add("object", typeof(object));
-
-                //typeMapper.Add("timespan", typeof(TimeSpan));
-
-                //typeMapper.Add("uint16", typeof(ushort));
-                //typeMapper.Add("ushort", typeof(ushort));
-
-                //typeMapper.Add("uint32", typeof(uint));
-                //typeMapper.Add("uint", typeof(uint));
-
-                //typeMapper.Add("uint64", typeof(ulong));
-                //typeMapper.Add("ulong", typeof(ulong));
-                //typeMapper.Add("unsignedLong", typeof(ulong));
-
-                //! Preload Xsd Array/List Types.
-                //// 
-                //typeMapper.Add("ArrayOfString", typeof(List<string>));
-                //typeMapper.Add("ArrayOfBoolean", typeof(List<bool>));
-                //typeMapper.Add("ArrayOfFloat", typeof(List<float>));
-                //typeMapper.Add("ArrayOfDouble", typeof(List<double>));
-                //typeMapper.Add("ArrayOfDecimal", typeof(List<decimal>));
-                //typeMapper.Add("ArrayOfLong", typeof(List<long>));
-                //typeMapper.Add("ArrayOfInt", typeof(List<int>));
-                //typeMapper.Add("ArrayOfShort", typeof(List<short>));
-                //typeMapper.Add("ArrayOfUnsignedByte", typeof(List<byte>));
-            }
-            sw.Stop();
-            //Log(Severity.Verbose, "Elapsed (Caching xml types): {0} ms", sw.ElapsedMilliseconds);
+            //
         }
 
         /// <summary>
@@ -405,12 +278,6 @@ namespace AssetPackage
             }
         }
 #endif
-
-        //~Node()
-        //{
-        //    Dispose(false);
-        //}
-
         #endregion Constructors
 
         #region Properties
@@ -422,18 +289,17 @@ namespace AssetPackage
         /// <value>
         /// The children.
         /// </value>
-        [XmlIgnore]
         public List<Node> Children
         {
             get
             {
                 return children;
             }
-            set
-            {
-#warning Added for testing newtonsoft
-                children = value;
-            }
+            //            set
+            //            {
+            //#warning Added for testing newtonsoft
+            //                children = value;
+            //            }
         }
 
         /// <summary>
@@ -443,7 +309,6 @@ namespace AssetPackage
         /// <value>
         /// The count.
         /// </value>
-        [XmlIgnore]
         public int Count
         {
             get
@@ -459,7 +324,6 @@ namespace AssetPackage
         /// <value>
         /// true if this object is root, false if not.
         /// </value>
-        [XmlIgnore]
         public Boolean IsRoot
         {
             get
@@ -475,7 +339,7 @@ namespace AssetPackage
         /// <value>
         /// The name.
         /// </value>
-        public String Name { get; private set; }
+        public String Name { get; internal set; }
 
         /// <summary>
         /// Gets the parent of the Node.
@@ -493,7 +357,6 @@ namespace AssetPackage
         /// <value>
         /// The full pathname of the file.
         /// </value>
-        [XmlIgnore]
         public String Path
         {
             get
@@ -521,7 +384,6 @@ namespace AssetPackage
         /// <value>
         /// The root.
         /// </value>
-        [XmlIgnore]
         public Node Root
         {
             get
@@ -544,7 +406,6 @@ namespace AssetPackage
         /// <value>
         /// The storage location.
         /// </value>
-        [XmlIgnore]
         public StorageLocations StorageLocation
         {
             get
@@ -558,7 +419,7 @@ namespace AssetPackage
                     return storageLocation;
                 }
             }
-            private set
+            internal set
             {
                 storageLocation = value;
             }
@@ -674,6 +535,23 @@ namespace AssetPackage
         #region Methods
 
         /// <summary>
+        /// Converts this object to a node structure.
+        /// </summary>
+        ///
+        /// <returns>
+        /// This object as a NodeStructure.
+        /// </returns>
+        public NodePath ToNodeStructure()
+        {
+            return IsRoot ?
+                new NodePath(this.Path, this.storageLocation, this.Purpose) :
+                (storageLocation == StorageLocations.Inherited ?
+                    new NodePath(this.Path) :
+                    new NodePath(this.Path, this.storageLocation)
+                );
+        }
+
+        /// <summary>
         /// Clears this object to its blank/initial state.
         /// </summary>
         public void Clear()
@@ -698,11 +576,37 @@ namespace AssetPackage
         /// Clears the data described by location.
         /// </summary>
         ///
-        /// <param name="location"> The location. </param>
+        /// <param name="location"> The location to match when enumerating. </param>
         public void ClearData(StorageLocations location)
         {
             //! Recusively Clear Data.
             foreach (Node child in this.PostfixEnumerator(new List<StorageLocations> { location }))
+            {
+                child.Value = null;
+            }
+        }
+
+        /// <summary>
+        /// Clears the data described by location.
+        /// </summary>
+        ///
+        /// <remarks>
+        /// This method clears all writeable data.
+        /// </remarks>
+        public void ClearData()
+        {
+            ClearData(GameStorageClientAsset.AllStorageLocations);
+        }
+
+        /// <summary>
+        /// Clears the data described by location.
+        /// </summary>
+        ///
+        /// <param name="enumeration">  The list of locations to match when enumerating. </param>
+        public void ClearData(List<StorageLocations> enumeration)
+        {
+            //! Recursively Clear Data. 
+            foreach (Node child in this.PostfixEnumerator(enumeration))
             {
                 child.Value = null;
             }
@@ -972,259 +876,6 @@ namespace AssetPackage
             return children != null ? children.Remove(item) : false;
         }
 
-        /// <summary>
-        /// This method is reserved and should not be used. When implementing the
-        /// IXmlSerializable interface, you should return null (Nothing in Visual
-        /// Basic) from this method, and instead, if specifying a custom schema is
-        /// required, apply the
-        /// <see cref="T:System.Xml.Serialization.XmlSchemaProviderAttribute" /> to
-        /// the class.
-        /// </summary>
-        ///
-        /// <returns>
-        /// An <see cref="T:System.Xml.Schema.XmlSchema" /> that describes the XML
-        /// representation of the object that is produced by the
-        /// <see cref="M:System.Xml.Serialization.IXmlSerializable.WriteXml(System.Xml.XmlWriter)" />
-        /// method and consumed by the
-        /// <see cref="M:System.Xml.Serialization.IXmlSerializable.ReadXml(System.Xml.XmlReader)" />
-        /// method.
-        /// </returns>
-        public XmlSchema GetSchema()
-        {
-            return null;
-        }
-
-        /// <summary>
-        /// Generates an object from its XML representation.
-        /// </summary>
-        ///
-        /// <param name="reader">   The <see cref="T:System.Xml.XmlReader" /> stream
-        ///                         from which the object is deserialized. </param>
-        public void ReadXml(XmlReader reader)
-        {
-            //! 1) Read <node> attributes.
-            // 
-            this.Name = reader["name"];
-            String loc = reader["location"];
-
-            //! 2) Process location attribute.
-
-            if (String.IsNullOrEmpty(loc))
-            {
-                this.storageLocation = StorageLocations.Inherited;
-            }
-            else
-            {
-                this.storageLocation = (StorageLocations)Enum.Parse(typeof(StorageLocations), loc);
-            }
-
-            //! 3) First tag can be either <value> or <children>.
-            // 
-            reader.ReadStartElement();
-
-            //! 4) Process <value> if present.
-            // 
-            //            if (reader.IsStartElement("value"))
-            //            {
-            //                //! 5) Move to value content tag.
-            //                // 
-            //                reader.ReadStartElement();
-
-            //                //! 6) Check for supported non-simple types (List<Int32> in this case).
-            //                //     See https://msdn.microsoft.com/en-us/library/ms531031(v=vs.85).aspx
-            //                if (typeMapper.ContainsKey(reader.Name))
-            //                {
-            //                    //! 7) Process non-simple type (these have xmlns attributes).
-            //                    // 
-            //                    this.Value = GetSerializer(typeMapper[reader.Name]).Deserialize(reader);
-            //                }
-            //                else if (reader.Name.Equals("base64Binary"))
-            //                {
-            //                    this.Value = reader.ReadElementContentAsObject();
-            //                }
-            //                else {
-            //                    //! 8) Process plain value types.
-            //                    // 
-            //                    if (Type.GetType(reader.Name) != null)
-            //                    {
-            //                        typeMapper.Add(reader.Name, Type.GetType(reader.Name));
-            //                        this.Value = GetSerializer(typeMapper[reader.Name]).Deserialize(reader);
-            //                    }
-            //                    else {
-            //#warning reads all things as a string.
-            //                        this.Value = reader.ReadElementContentAsObject();
-            //                    }
-            //                }
-
-            //                //! 9) Skip </value>
-            //                // 
-            //                reader.ReadEndElement();
-            //            }
-
-            //! 10) Check for non-empty children tag (if present it's not empty).
-            // 
-            if (reader.IsStartElement("children"))
-            {
-                //! 11) Read child count.
-                // 
-                Int32 count = Int32.Parse(reader["count"]);
-
-                //! 12) Read children opening tag.
-                // 
-                reader.ReadStartElement();
-
-                //! 13) Process child nodes.
-                //
-                for (Int32 i = 0; i < count; i++)
-                {
-                    Node node = (Node)GetSerializer(this.GetType()).Deserialize(reader);
-
-                    //Debug.Print("Adding {0} to {1}", node.Name, this.Name);
-
-                    this.AddChild(node);
-                }
-
-                //! 14) Skip </children>
-                reader.ReadEndElement();
-
-                //! 15) Skip </node>.
-                reader.ReadEndElement();
-            }
-            //else
-            //{
-            //    //! 15) Skip </node>.
-            //    //reader.ReadEndElement();
-            //}
-
-            ////! 15) Skip </node>.
-            //// 
-            //if (!reader.IsStartElement("node"))
-            //{
-            //    //reader.ReadEndElement();
-            //}
-        }
-
-        /// <summary>
-        /// Converts an object into its XML representation.
-        /// </summary>
-        ///
-        /// <param name="writer">   The <see cref="T:System.Xml.XmlWriter" /> stream
-        ///                         to which the object is serialized. </param>
-        public void WriteXml(XmlWriter writer)
-        {
-            //Debug.Print(this.Name);
-
-            //! 1) Add name as an attribute to <node>.
-            // 
-            writer.WriteAttributeString("name", this.Name);
-
-            if (IsRoot)
-            {
-                writer.WriteAttributeString("purpose", this.Purpose);
-            }
-
-            // Debug Code.
-            // writer.WriteAttributeString("path", this.Path);
-
-            //! 2) Add StorageLocation as an attribute to <node> if not inherited.
-            //!    Note we store the actual value and not the resoled one.  
-            // 
-            if (this.storageLocation != StorageLocations.Inherited)
-            {
-                writer.WriteAttributeString("location", this.storageLocation.ToString());
-            }
-
-            //! 3) If there is a value present, serialize it as a <value> tag.
-            //!    Using the Value property is not an option as it tries to retrieve Virtual Propeties too.
-            //!    The model being serialized seems a kind of incomplete copy.
-            // 
-            if (!xmlStructureOnly && this.value != null)
-            {
-#warning DEBUG CODE
-                writer.WriteStartElement("value");
-                GetSerializer(this.value.GetType()).Serialize(writer, this.value);
-                writer.WriteEndElement();
-            }
-
-            //! 4) If there are children present, serialize it as a <children> tag.
-            if (this.Count != 0)
-            {
-                writer.WriteStartElement("children");
-
-                //! 5) Add (child)count as an attribute to <children>
-                //
-                writer.WriteAttributeString("count", this.Count.ToString());
-
-                //! 6) Serialize all children (recursively).
-                foreach (Node node in this.Children)
-                {
-                    GetSerializer(node.GetType()).Serialize(writer, node);
-                }
-
-                //! 7) Write </children> tag. 
-                // 
-                writer.WriteEndElement();
-            }
-        }
-
-        /// <summary>
-        /// Gets a serializer.
-        /// </summary>
-        ///
-        /// <param name="type"> The type. </param>
-        ///
-        /// <returns>
-        /// The serializer.
-        /// </returns>
-        public static XmlSerializer GetSerializer(Type type)
-        {
-            if (!serializers.ContainsKey(type))
-            {
-                // Log(Severity.Verbose, "Caching XmlSerializer for {0}", type.FullName);
-
-                serializers.Add(type, new XmlSerializer(type));
-                //serializers.Add(type, XmlSerializer.FromTypes(new[] { type })[0]);
-            }
-
-            return serializers[type];
-        }
-
-        /// <summary>
-        /// Converts this object to an XML.
-        /// </summary>
-        ///
-        /// <returns>
-        /// This object as a String.
-        /// </returns>
-        public String ToXml(Boolean structureOnly = true)
-        {
-            using (StringWriterUtf8 textWriter = new StringWriterUtf8())
-            {
-                XmlWriterSettings settings = new XmlWriterSettings();
-                settings.OmitXmlDeclaration = true;
-                settings.Indent = true;
-
-                XmlSerializerNamespaces ns = new XmlSerializerNamespaces();
-                ns.Add("", "");
-
-                XmlSerializer ser = GetSerializer(GetType());
-
-                using (XmlWriter tw = XmlWriter.Create(textWriter, settings))
-                {
-#warning DEBUG CODE
-                    xmlStructureOnly = structureOnly;
-
-                    ser.Serialize(tw, this, ns);
-#warning DEBUG CODE
-                    xmlStructureOnly = true;
-                }
-
-                textWriter.Flush();
-
-                return textWriter.ToString();
-            }
-        }
-
 #if BINARY
         /// <summary>
         /// Convert this object into a binary (Base64 Encoded) representation.
@@ -1291,36 +942,6 @@ namespace AssetPackage
         }
 #endif
 
-        /// <summary>
-        /// Initializes this object from the given from XML.
-        /// </summary>
-        ///
-        /// <param name="xml"> The XML. </param>
-        ///
-        /// <returns>
-        /// A Node&lt;T&gt;
-        /// </returns>
-        public void FromXml(String xml)
-        {
-            using (MemoryStream ms = new MemoryStream())
-            {
-                Byte[] bytes = Encoding.UTF8.GetBytes(xml);
-                ms.Write(bytes, 0, bytes.Length);
-                ms.Flush();
-                ms.Seek(0, SeekOrigin.Begin);
-
-                XmlSerializer ser = GetSerializer(GetType());
-
-                Node tmp = (Node)ser.Deserialize(ms);
-
-                this.Name = tmp.Name;
-                this.Parent = tmp.Parent;
-                this.children = tmp.children;
-                this.storageLocation = tmp.storageLocation;
-                this.Value = tmp.Value;
-            }
-        }
-
 #if BINARY
 
         /// <summary>
@@ -1361,9 +982,47 @@ namespace AssetPackage
             }
         }
 #endif
+        public enum ToStringSaveOptions
+        {
+            Data,
+            Structure,
+        }
+
+        /// <summary>
+        /// Default constructor.
+        /// </summary>
+        ///
+        /// <returns>
+        /// A String that represents this object.
+        /// </returns>
+        public override String ToString()
+        {
+            return ToString(true, SerializingFormat.Xml);
+        }
+
+        /// <summary>
+        /// Default constructor.
+        /// </summary>
+        ///
+        /// <param name="StructureOnly">    Options for controlling the operation. </param>
+        /// <param name="format">           (Optional) Describes the format to use. </param>
+        ///
+        /// <returns>
+        /// A String that represents this object.
+        /// </returns>
+        public String ToString(Boolean StructureOnly, SerializingFormat format = SerializingFormat.Xml)
+        {
+            switch (StructureOnly)
+            {
+                case true:
+                    return Root.Owner.SerializeStructure(this.Purpose, format);
+                case false:
+                    return Root.Owner.SerializeData(this.Purpose, StorageLocations.Local, format, GameStorageClientAsset.AllStorageLocations);
+            }
+
+            return String.Empty;
+        }
 
         #endregion Methods
     }
-
-
 }
