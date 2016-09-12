@@ -21,4 +21,4 @@ Xml Serialization tends to turn all generic lists into arrays.
 Note: Binary serialization was forseen also but has issues with PCL (Portable Class Libraries) 
       and is therefor currently disabled.
 
-Note: The structure is now saved in a format6 alike the data (so no longer as base64 encoded xml embedded in json).
+Note: The structure is now saved in a format alike the data (so no longer as base64 encoded xml embedded in json).
