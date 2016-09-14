@@ -18,27 +18,34 @@
 namespace AssetPackage
 {
     using System;
-    using System.Collections.Generic;
     using System.ComponentModel;
     using System.Xml.Serialization;
 
-    /// </remarks>
+#if PORTABLE
+#else
+    [Serializable]
+#endif
+
+    /// <summary>
+    /// (Serializable) a node paths.
+    /// </summary>
     [XmlRoot("Model")]
     public class NodePaths
     {
         public NodePaths()
         {
-            Nodes = new List<NodePath>();
+            Nodes = new NodePath[0];
         }
 
         [XmlArray("Nodes")]
         //[XmlArrayItem("Node")]
-        //[XmlArrayItem("NodeStructure")]
-        //[XmlArrayItem("NodeRootStructure")]
-        //[XmlElement("NodePath", typeof(NodePath))]
-        public List<NodePath> Nodes;
+        public NodePath[] Nodes;
     }
 
+#if PORTABLE
+#else
+    [Serializable]
+#endif
     public class NodePath
     {
         /// <summary>
@@ -92,75 +99,6 @@ namespace AssetPackage
         {
             this.Purpose = Purpose;
         }
-    }
-
-    //public class NodeStructure : NodePath
-    //{
-    //    /// <summary>
-    //    /// The location.
-    //    /// </summary>
-    //    public StorageLocations Location;
-
-    //    /// <summary>
-    //    /// Default constructor.
-    //    /// </summary>
-    //    public NodeStructure() : base()
-    //    {
-    //        this.Location = StorageLocations.Inherited;
-    //    }
-
-    //    /// <summary>
-    //    /// Constructor.
-    //    /// </summary>
-    //    ///
-    //    /// <param name="Path">     Full pathname of the file. </param>
-    //    /// <param name="Location"> The location. </param>
-    //    public NodeStructure(String Path, StorageLocations Location) : base(Path)
-    //    {
-    //        this.Location = Location;
-    //    }
-    //}
-
-    //public class NodeRootStructure : NodeStructure
-    //{
-    //    /// <summary>
-    //    /// Full pathname of the file.
-    //    /// </summary>
-    //    public String Purpose;
-
-    //    /// <summary>
-    //    /// Default constructor.
-    //    /// </summary>
-    //    public NodeRootStructure() : base()
-    //    {
-    //    }
-
-    //    /// <summary>
-    //    /// Constructor.
-    //    /// </summary>
-    //    ///
-    //    /// <param name="Path">     Full pathname of the file. </param>
-    //    /// <param name="Location"> The location. </param>
-    //    /// <param name="Purpose">  Full pathname of the file. </param>
-    //    public NodeRootStructure(String Path, StorageLocations Location, String Purpose) : base(Path, Location)
-    //    {
-    //        this.Purpose = Purpose;
-    //    }
-    //}
-
-    /// <summary>
-    /// Interface for node value classes.
-    /// </summary>
-    public interface INodeValue
-    {
-        Object GetValue();
-        void SetValue(Object Value);
-
-        String GetPath();
-        void SetPath(String Path);
-
-        String GetValueType();
-        void SetValueType(String Path);
     }
 
 #if PORTABLE
@@ -226,6 +164,22 @@ namespace AssetPackage
     public class NodeObjectValue : NodeStringValue
     {
         internal Object ValueAsObject;
+    }
+
+    /// <summary>
+    /// Interface for node value classes. Used as a helper during Json Deserialzation for easuer
+    /// handling of created generic types.
+    /// </summary>
+    public interface INodeValue
+    {
+        Object GetValue();
+        void SetValue(Object Value);
+
+        String GetPath();
+        void SetPath(String Path);
+
+        String GetValueType();
+        void SetValueType(String Path);
     }
 
 #if PORTABLE

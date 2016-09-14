@@ -1004,6 +1004,11 @@ namespace AssetPackage
         /// Default constructor.
         /// </summary>
         ///
+        /// <remarks>
+        /// 1) This method might not show the complete tree when StructureOnly=false as null data is
+        /// ommitted. 2) When StructureOnly = true it should show the whole structure.
+        /// </remarks>
+        ///
         /// <param name="StructureOnly">    Options for controlling the operation. </param>
         /// <param name="format">           (Optional) Describes the format to use. </param>
         ///

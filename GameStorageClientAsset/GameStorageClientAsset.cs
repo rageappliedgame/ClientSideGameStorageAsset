@@ -114,14 +114,30 @@ namespace AssetPackage
         /// A Regex to extact the token value from JSON.
         /// </summary>
         private Regex jsonToken = new Regex(String.Format(TokenRegEx, "token"), RegexOptions.Singleline);
+
+        /// <summary>
+        /// The JSON value.
+        /// </summary>
         private Regex jsonValue = new Regex(jsonValueRegEx, RegexOptions.Singleline | RegexOptions.IgnorePatternWhitespace);
+
+        /// <summary>
+        /// The serializing prefixes.
+        /// </summary>
         private Dictionary<SerializingFormat, String> prefixes = new Dictionary<SerializingFormat, string>();
+
+        /// <summary>
+        /// The serializing separators.
+        /// </summary>
         private Dictionary<SerializingFormat, String> separators = new Dictionary<SerializingFormat, string>();
 
         /// <summary>
         /// Options for controlling the operation.
         /// </summary>
         private GameStorageClientAssetSettings settings = null;
+
+        /// <summary>
+        /// The serializing suffixes.
+        /// </summary>
         private Dictionary<SerializingFormat, String> suffixes = new Dictionary<SerializingFormat, string>();
 
         #endregion Fields
@@ -153,7 +169,7 @@ namespace AssetPackage
             Types.Add(typeof(Double).FullName, typeof(Double));
             Types.Add(typeof(DateTime).FullName, typeof(DateTime));
 
-            prefixes.Add(SerializingFormat.Json, "{ \"nodes\" : [");
+            prefixes.Add(SerializingFormat.Json, "{ \"Nodes\" : [");
             prefixes.Add(SerializingFormat.Xml, "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n<Model>\r\n<Nodes>");
 
             separators.Add(SerializingFormat.Json, ",");
@@ -1097,7 +1113,7 @@ namespace AssetPackage
             //
             NodePaths sNodes = (NodePaths)serializer.Deserialize<NodePaths>(data, format);
 
-            for (Int32 i = 0; i < sNodes.Nodes.Count; i++)
+            for (Int32 i = 0; i < sNodes.Nodes.Length; i++)
             {
                 NodePath np = sNodes.Nodes[i];
 
@@ -1144,7 +1160,7 @@ namespace AssetPackage
             //
             NodePaths sNodes = (NodePaths)serializer.Deserialize<NodePaths>(data, format);
 
-            for (Int32 i = 0; i < sNodes.Nodes.Count; i++)
+            for (Int32 i = 0; i < sNodes.Nodes.Length; i++)
             {
                 NodePath np = sNodes.Nodes[i];
 
@@ -1556,6 +1572,12 @@ namespace AssetPackage
             //
             foreach (Node node in root.PrefixEnumerator(enumeration != null ? enumeration : new List<StorageLocations> { location }))
             {
+                //! Game based values should not saved, but it happens as this method is called by Node.ToString()
+                //! with AllStorageLocations as parameter. if (node.StorageLocation == StorageLocations.Game)
+                //! {
+                //!    continue; 
+                //! }
+
                 //! As the data is cleared before a restore and thus a node with a null value does not have to be saved.
                 if (node.Value != null)
                 {
@@ -1678,6 +1700,7 @@ namespace AssetPackage
                 }
                 else
                 {
+                    // Harmless when caused by Node.ToString().
                     Log(Severity.Warning, "Null Node Value encountered for Path '{0}'.", node.Path);
                 }
             }
@@ -1733,12 +1756,18 @@ namespace AssetPackage
                 serialized.AppendLine(prefixes[format]);
             }
 
-            Type nodeValueType = typeof(NodeValue<>);
+            //Type nodeValueType = typeof(NodeValue<>);
 
             //! 2) Enumerate all nodes to be save to the specified location.
             //
             foreach (Node node in root.PrefixEnumerator(enumeration != null ? enumeration : new List<StorageLocations> { location }))
             {
+                //! Game based values should not saved, but it happens as this method is called by Node.ToString()
+                //! with AllStorageLocations as parameter. if (node.StorageLocation == StorageLocations.Game)
+                //! {
+                //!    continue; 
+                //! }
+
                 //! As the data is cleared before a restore and thus a node with a null value does not have to be saved.
                 if (node.Value != null)
                 {
@@ -1770,6 +1799,7 @@ namespace AssetPackage
                 }
                 else
                 {
+                    // Harmless when caused by Node.ToString().
                     Log(Severity.Warning, "Null Node Value encountered for Path '{0}'.", node.Path);
                 }
             }
