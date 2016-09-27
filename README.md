@@ -3,7 +3,7 @@ RAGE T2.4c - Client Side Game Storage Asset
 
 This asset allows a developer to define and store (model)data in a tree structure. 
 
-Each node in such model, can define its own the datatype and preferred storage location (or inherited the location).
+Each node in such model, can define its own datatype and preferred storage location (or inherited the location).
 
 Structure and data are stored separately to allow restoring a model from multiple storage locations.
 
