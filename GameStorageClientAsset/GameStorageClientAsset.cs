@@ -43,6 +43,8 @@ namespace AssetPackage
 
         public static List<StorageLocations> AllStorageLocations = new List<StorageLocations>();
 
+        public static List<StorageLocations> AllWriteableStorageLocations = new List<StorageLocations>();
+
         private const String jsonArrayRegEx = "\"Value\":(?:\\s?)(\\[(?>[^\\[\\]]+|\\[(?<number>)|\\](?<-number>))*(?(number)(?!))\\])";
 
         /// <summary>
@@ -151,7 +153,14 @@ namespace AssetPackage
         {
             foreach (StorageLocations location in Enum.GetValues(typeof(StorageLocations)))
             {
+                //! TODO See if we can remove StorageLocations.Inherited from this list.
+                //       As it's never a returned value of the Node.StorageLocation it should not matter.
                 AllStorageLocations.Add(location);
+
+                if (location != StorageLocations.Game && location != StorageLocations.Inherited)
+                {
+                    AllWriteableStorageLocations.Add(location);
+                }
             }
         }
 
@@ -648,7 +657,7 @@ namespace AssetPackage
 
                             string data = storage.Load(fn);
 
-                            DeSerializeStructure(model, data, location, format);
+                            DeSerializeStructure(model, data, format);
 
                             return true;
                         }
@@ -675,7 +684,7 @@ namespace AssetPackage
 
                             if (response.ResultAllowed)
                             {
-                                DeSerializeStructure(model, response.body, location, format);
+                                DeSerializeStructure(model, response.body, format);
                             }
 
                             //if (jsonStructure.IsMatch(response.body))
@@ -1016,25 +1025,28 @@ namespace AssetPackage
         /// De serialize data.
         /// </summary>
         ///
-        /// <param name="model">    The model. </param>
-        /// <param name="data">     The data. </param>
-        /// <param name="location"> The location. </param>
-        /// <param name="format">   Describes the format to use. </param>
-        internal void DeSerializeData(String model, String data, StorageLocations location, SerializingFormat format)
+        /// <param name="model">        The model. </param>
+        /// <param name="data">         The data. </param>
+        /// <param name="location">     The location. </param>
+        /// <param name="format">       Describes the format to use. </param>
+        /// <param name="enumeration">  (Optional) The enumeration. </param>
+        internal void DeSerializeData(String model, String data, StorageLocations location, SerializingFormat format, List<StorageLocations> enumeration = null)
         {
             if (Models.ContainsKey(model))
             {
                 ISerializer serializer = getInterface<ISerializer>();
+
+                List<StorageLocations> locs = enumeration != null ? enumeration : new List<StorageLocations> { location };
 
                 if (serializer != null && serializer.Supports(format))
                 {
                     switch (format)
                     {
                         case SerializingFormat.Json:
-                            DeserializeDataJson(serializer, Models[model], data, location, format);
+                            DeserializeDataJson(serializer, Models[model], data, location, format, locs);
                             break;
                         case SerializingFormat.Xml:
-                            DeserializeDataXml(serializer, Models[model], data, location, format);
+                            DeserializeDataXml(serializer, Models[model], data, location, format, locs);
                             break;
                     }
                 }
@@ -1045,7 +1057,7 @@ namespace AssetPackage
                     switch (format)
                     {
                         case SerializingFormat.Xml:
-                            DeserializeDataXml(new InternalXmlSerializer(), Models[model], data, location, format);
+                            DeserializeDataXml(new InternalXmlSerializer(), Models[model], data, location, format, locs);
                             break;
                         default:
                             Log(Severity.Warning, String.Format("ISerializer interface for {0} not found a Bridge", format));
@@ -1059,7 +1071,14 @@ namespace AssetPackage
             }
         }
 
-        internal void DeSerializeStructure(String model, String data, StorageLocations location, SerializingFormat format)
+        /// <summary>
+        /// De serialize structure.
+        /// </summary>
+        ///
+        /// <param name="model">    The model. </param>
+        /// <param name="data">     The data. </param>
+        /// <param name="format">   Describes the format to use. </param>
+        internal void DeSerializeStructure(String model, String data, SerializingFormat format)
         {
             if (Models.ContainsKey(model))
             {
@@ -1070,10 +1089,10 @@ namespace AssetPackage
                     switch (format)
                     {
                         case SerializingFormat.Json:
-                            DeSerializeStructureJson(serializer, Models[model], data, location, format);
+                            DeSerializeStructureJson(serializer, Models[model], data, format);
                             break;
                         case SerializingFormat.Xml:
-                            DeSerializeStructureXml(serializer, Models[model], data, location, format);
+                            DeSerializeStructureXml(serializer, Models[model], data, format);
                             break;
                     }
                 }
@@ -1084,7 +1103,7 @@ namespace AssetPackage
                     switch (format)
                     {
                         case SerializingFormat.Xml:
-                            DeSerializeStructureXml(new InternalXmlSerializer(), Models[model], data, location, format);
+                            DeSerializeStructureXml(new InternalXmlSerializer(), Models[model], data, format);
                             break;
                         default:
                             Log(Severity.Warning, String.Format("ISerializer interface for {0} not found a Bridge", format));
@@ -1105,9 +1124,8 @@ namespace AssetPackage
         /// <param name="serializer">   The serializer. </param>
         /// <param name="root">         The root. </param>
         /// <param name="data">         The data. </param>
-        /// <param name="location">     The location. </param>
         /// <param name="format">       Describes the format to use. </param>
-        private void DeSerializeStructureXml(ISerializer serializer, Node root, String data, StorageLocations location, SerializingFormat format)
+        private void DeSerializeStructureXml(ISerializer serializer, Node root, String data, SerializingFormat format)
         {
             //! Get a list of things to deserialize.
             //
@@ -1152,9 +1170,8 @@ namespace AssetPackage
         /// <param name="serializer">   The serializer. </param>
         /// <param name="root">         The root. </param>
         /// <param name="data">         The data. </param>
-        /// <param name="location">     The location. </param>
         /// <param name="format">       Describes the format to use. </param>
-        private void DeSerializeStructureJson(ISerializer serializer, Node root, string data, StorageLocations location, SerializingFormat format)
+        private void DeSerializeStructureJson(ISerializer serializer, Node root, string data, SerializingFormat format)
         {
             //! Get a list of things to deserialize.
             //
@@ -1206,7 +1223,8 @@ namespace AssetPackage
         /// <param name="data">         The data. </param>
         /// <param name="location">     The location. </param>
         /// <param name="format">       Describes the format to use. </param>
-        private void DeserializeDataJson(ISerializer serializer, Node root, String data, StorageLocations location, SerializingFormat format)
+        /// <param name="enumeration">  (Optional) The enumeration. </param>
+        private void DeserializeDataJson(ISerializer serializer, Node root, String data, StorageLocations location, SerializingFormat format, List<StorageLocations> enumeration)
         {
             //! Get a list of things to deserialize.
             //
@@ -1294,7 +1312,7 @@ namespace AssetPackage
 
                 //! Update Tree by path (not very optimized yet).
                 //
-                Node n = root.PrefixEnumerator(new List<StorageLocations> { location }).FirstOrDefault(p => p.Path.Equals(nodeStringValue.Path));
+                Node n = root.PrefixEnumerator(enumeration).FirstOrDefault(p => p.Path.Equals(nodeStringValue.Path));
                 if (n != null)
                 {
                     n.Value = fixNodeValue.ValueAsObject;
@@ -1306,12 +1324,13 @@ namespace AssetPackage
         /// Deserialize this object to the given stream.
         /// </summary>
         ///
-        /// <param name="serializer"> The serializer. </param>
-        /// <param name="root">       The root. </param>
-        /// <param name="data">       The data. </param>
-        /// <param name="location">   The location. </param>
-        /// <param name="format">     Describes the format to use. </param>
-        private void DeserializeDataXml(ISerializer serializer, Node root, String data, StorageLocations location, SerializingFormat format)
+        /// <param name="serializer">   The serializer. </param>
+        /// <param name="root">         The root. </param>
+        /// <param name="data">         The data. </param>
+        /// <param name="location">     The location. </param>
+        /// <param name="format">       Describes the format to use. </param>
+        /// <param name="enumeration">  (Optional) The enumeration. </param>
+        private void DeserializeDataXml(ISerializer serializer, Node root, String data, StorageLocations location, SerializingFormat format, List<StorageLocations> enumeration)
         {
             //! Get a list of things to deserialize.
             //
@@ -1372,7 +1391,7 @@ namespace AssetPackage
 
                 //! Update Tree by path (not very optimized yet).
                 //
-                Node n = root.PrefixEnumerator(new List<StorageLocations> { location }).FirstOrDefault(p => p.Path.Equals(nodeStringValue.Path));
+                Node n = root.PrefixEnumerator(enumeration).FirstOrDefault(p => p.Path.Equals(nodeStringValue.Path));
                 if (n != null)
                 {
                     n.Value = fixNodeValue.ValueAsObject;

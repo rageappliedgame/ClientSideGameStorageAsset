@@ -1006,23 +1006,38 @@ namespace AssetPackage
         ///
         /// <remarks>
         /// 1) This method might not show the complete tree when StructureOnly=false as null data is
-        /// ommitted. 2) When StructureOnly = true it should show the whole structure.
+        /// ommitted.
+        /// 
+        /// 2) When StructureOnly = true it should show the whole structure.
+        /// </remarks>
+        ///
+        /// <remarks>
+        /// For testing purposes only as it stores everything.
         /// </remarks>
         ///
         /// <param name="StructureOnly">    Options for controlling the operation. </param>
         /// <param name="format">           (Optional) Describes the format to use. </param>
+        /// <param name="enumeration">
+        /// (Optional)
+        /// The list of locations to match when enumerating. </param>
         ///
         /// <returns>
         /// A String that represents this object.
         /// </returns>
-        public String ToString(Boolean StructureOnly, SerializingFormat format = SerializingFormat.Xml)
+        public String ToString(Boolean StructureOnly, SerializingFormat format = SerializingFormat.Xml, List<StorageLocations> enumeration = null)
         {
             switch (StructureOnly)
             {
                 case true:
-                    return Root.Owner.SerializeStructure(this.Purpose, format);
+                    return Root.Owner.SerializeStructure(
+                        this.Purpose,
+                        format);
                 case false:
-                    return Root.Owner.SerializeData(this.Purpose, StorageLocations.Local, format, GameStorageClientAsset.AllStorageLocations);
+                    return Root.Owner.SerializeData(
+                        this.Purpose,
+                        StorageLocations.Local,
+                        format,
+                        enumeration == null ? GameStorageClientAsset.AllWriteableStorageLocations : new List<StorageLocations> { StorageLocations.Local });
             }
 
             return String.Empty;
@@ -1032,18 +1047,36 @@ namespace AssetPackage
         /// From string.
         /// </summary>
         ///
+        /// <remarks>
+        /// For testing purposes only as it restores everything.
+        /// 
+        /// Note: Game Location will not be restored.
+        /// </remarks>
+        ///
         /// <param name="data">             The data. </param>
         /// <param name="StructureOnly">    Options for controlling the operation. </param>
         /// <param name="format">           (Optional) Describes the format to use. </param>
-        public Node FromString(String data, Boolean StructureOnly, SerializingFormat format = SerializingFormat.Xml)
+        ///
+        /// <returns>
+        /// A Node.
+        /// </returns>
+        public Node FromString(String data, Boolean StructureOnly, SerializingFormat format = SerializingFormat.Xml, List<StorageLocations> enumeration = null)
         {
             switch (StructureOnly)
             {
                 case true:
-                    Root.Owner.DeSerializeStructure(this.Purpose, data, StorageLocations.Local, format);
+                    Root.Owner.DeSerializeStructure(
+                        this.Purpose,
+                        data,
+                        format);
                     break;
                 case false:
-                    Root.Owner.DeSerializeData(this.Purpose, data, StorageLocations.Local, format);
+                    Root.Owner.DeSerializeData(
+                        this.Purpose,
+                        data,
+                        StorageLocations.Local,
+                        format,
+                        enumeration == null ? GameStorageClientAsset.AllWriteableStorageLocations : new List<StorageLocations> { StorageLocations.Local });
                     break;
             }
 

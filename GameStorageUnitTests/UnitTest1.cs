@@ -516,12 +516,56 @@
             //! Fixup purpose as it cannot be restored (matches the asst.Models keys).
             //
             String xml2 = asset[restoredId].ToString(true, SerializingFormat.Xml).Replace(
-                String.Format("purpose=\"{0}\"", restoredId),
-                String.Format("purpose=\"{0}\"", modelId));
+                String.Format("<Purpose>{0}</Purpose>", restoredId),
+                String.Format("<Purpose>{0}</Purpose>", modelId));
 
             //Debug.Print(xml2);
 
             Assert.AreEqual(xml1, xml2);
+        }
+
+        /// <summary>
+        /// (Unit Test Method) tests child xml (de)serialize.
+        /// </summary>
+        [TestMethod]
+        public void TestChild_Serialize_03()
+        {
+            // https://en.wikipedia.org/wiki/Tree_traversal
+            WikiExampleTree(asset.AddModel("Wiki"));
+
+            Stopwatch sw = new Stopwatch();
+
+            sw.Reset();
+            sw.Start();
+            String xmls = asset["Wiki"].ToString(true, SerializingFormat.Xml);
+            String xmld = asset["Wiki"].ToString(false, SerializingFormat.Xml);
+            sw.Stop();
+            Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
+
+            Node restored = asset.AddModel(restoredId);
+
+            String xml2s = xmls.Replace(
+            String.Format("<Purpose>{0}</Purpose>", "Wiki"),
+            String.Format("<Purpose>{0}</Purpose>", restoredId));
+
+            sw.Reset();
+            sw.Start();
+            //! Note that restored is not restored inside FromString (but the Owner Asset's model collection is).
+            //! So we need an assignment if we want to use restored further on or get it from the asssets nodes.
+            restored.FromString(xml2s, true);
+            restored.FromString(xmld, false);
+            sw.Stop();
+            Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
+
+            //! Fixup purpose as it cannot be restored (matches the asst.Models keys).
+            //
+            String xml2 = asset[restoredId].ToString(false, SerializingFormat.Xml).Replace(
+                String.Format("<Purpose>{0}</Purpose>", restoredId),
+                String.Format("<Purpose>{0}</Purpose>", "Wiki"));
+
+            //Debug.Print(xml2);
+
+            Assert.AreEqual(xmld, xml2);
         }
 
         ///// <summary>
@@ -737,8 +781,29 @@
     }
 
     #region Nested Types
-    public class Bridge : IBridge, ILog
+    public class Bridge : IBridge, ILog, IVirtualProperties
     {
+
+        /// <summary>
+        /// Looks up a given key to find its associated value.
+        /// </summary>
+        ///
+        /// <param name="model"> The model. </param>
+        /// <param name="key">   The key. </param>
+        ///
+        /// <returns>
+        /// An Object.
+        /// </returns>
+        public object LookupValue(string model, string key)
+        {
+            if (key.Equals("Virtual"))
+            {
+                return DateTime.Now;
+            }
+
+            return null;
+        }
+
         public void Log(Severity severity, string msg)
         {
             Debug.Print("{0} - {1}", severity, msg);
