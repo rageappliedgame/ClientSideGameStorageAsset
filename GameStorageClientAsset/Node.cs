@@ -1028,6 +1028,28 @@ namespace AssetPackage
             return String.Empty;
         }
 
+        /// <summary>
+        /// From string.
+        /// </summary>
+        ///
+        /// <param name="data">             The data. </param>
+        /// <param name="StructureOnly">    Options for controlling the operation. </param>
+        /// <param name="format">           (Optional) Describes the format to use. </param>
+        public Node FromString(String data, Boolean StructureOnly, SerializingFormat format = SerializingFormat.Xml)
+        {
+            switch (StructureOnly)
+            {
+                case true:
+                    Root.Owner.DeSerializeStructure(this.Purpose, data, StorageLocations.Local, format);
+                    break;
+                case false:
+                    Root.Owner.DeSerializeData(this.Purpose, data, StorageLocations.Local, format);
+                    break;
+            }
+
+            return Root.Owner[this.Purpose];
+        }
+
         #endregion Methods
     }
 }

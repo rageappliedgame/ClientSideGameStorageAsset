@@ -1020,7 +1020,7 @@ namespace AssetPackage
         /// <param name="data">     The data. </param>
         /// <param name="location"> The location. </param>
         /// <param name="format">   Describes the format to use. </param>
-        private void DeSerializeData(String model, String data, StorageLocations location, SerializingFormat format)
+        internal void DeSerializeData(String model, String data, StorageLocations location, SerializingFormat format)
         {
             if (Models.ContainsKey(model))
             {
@@ -1059,7 +1059,7 @@ namespace AssetPackage
             }
         }
 
-        private void DeSerializeStructure(String model, String data, StorageLocations location, SerializingFormat format)
+        internal void DeSerializeStructure(String model, String data, StorageLocations location, SerializingFormat format)
         {
             if (Models.ContainsKey(model))
             {

@@ -4,28 +4,24 @@
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
+    using System.Linq;
     using System.Runtime.Serialization;
     using System.Runtime.Serialization.Formatters.Binary;
     using System.Text;
+    using AssetManagerPackage;
+    using AssetPackage;
 
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-
-    using AssetPackage;
 
     [TestClass]
     public class UnitTest1
     {
-        #region Constants
+        #region Fields
 
         const string modelId = "test";
         const string restoredId = "restored";
 
-        #endregion Constants
-
-        #region Fields
-
         private GameStorageClientAsset asset = new GameStorageClientAsset();
-
         private Node root;
 
         #endregion Fields
@@ -52,6 +48,11 @@
         public void Initialize()
         {
             Debug.Print("-------");
+
+            if (AssetManager.Instance.Bridge == null)
+            {
+                AssetManager.Instance.Bridge = new Bridge();
+            }
 
             asset.AddModel(modelId);
 
@@ -143,6 +144,110 @@
         }
 
         /// <summary>
+        /// (Unit Test Method) tests binary (de)serialize of structure + data.
+        /// </summary>
+        //[TestMethod]
+        //public void TestChild_Serialize_06()
+        //{
+        //    // https://en.wikipedia.org/wiki/Tree_traversal
+        //    WikiExampleTree();
+        //    using (MemoryStream ms = new MemoryStream())
+        //    {
+        //        //StreamingContext sc = new StreamingContext(StreamingContextStates.All, false);
+        //        //BinaryFormatter bf = new BinaryFormatter(null, sc);
+        //        Stopwatch sw = new Stopwatch();
+        //        sw.Reset();
+        //        sw.Start();
+        //        String base64 = root.ToBinary();
+        //        sw.Stop();
+        //        Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
+        //        Node restored = asset.AddModel(restoredId);
+        //        //sw.Reset();
+        //        sw.Start();
+        //        restored.FromBinary(base64);
+        //        sw.Stop();
+        //        Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
+        //        sw.Reset();
+        //        sw.Start();
+        //        Debug.Print(restored.ToXml());
+        //        sw.Stop();
+        //        Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
+        //        //! Fixup purpose as it cannot be restored (matches the asst.Models keys).
+        //        //
+        //        String xml2 = restored.ToXml().Replace(
+        //            String.Format("purpose=\"{0}\"", restoredId),
+        //            String.Format("purpose=\"{0}\"", modelId));
+        //        Assert.AreEqual(root.ToXml(), xml2);
+        //        Assert.AreEqual(root["F"]["G"]["I"].Value, restored["F"]["G"]["I"].Value);
+        //    }
+        //}
+        /// <summary>
+        /// (Unit Test Method) tests binary (de)serialize of structure + data.
+        /// </summary>
+        //[TestMethod]
+        //public void TestChild_Serialize_07()
+        //{
+        //    // https://en.wikipedia.org/wiki/Tree_traversal
+        //    WikiExampleTree();
+        //    Stopwatch sw = new Stopwatch();
+        //    sw.Reset();
+        //    sw.Start();
+        //    String sonly = root.ToBinary(true);
+        //    sw.Stop();
+        //    Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
+        //    sw.Reset();
+        //    sw.Start();
+        //    String sandd = root.ToBinary(false);
+        //    sw.Stop();
+        //    Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
+        //    Assert.AreNotEqual(sonly, sandd);
+        //}
+        /// <summary>
+        /// (Unit Test Method) tests binary (de)serialize of structure + data.
+        /// </summary>
+        //[TestMethod]
+        //public void TestChild_Serialize_08()
+        //{
+        //    // https://en.wikipedia.org/wiki/Tree_traversal
+        //    WikiExampleTree();
+        //    Stopwatch sw = new Stopwatch();
+        //    sw.Reset();
+        //    sw.Start();
+        //    String base64 = root.ToBinary();
+        //    sw.Stop();
+        //    Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
+        //    Debug.Print(root.ToXml());
+        //    sw.Reset();
+        //    sw.Start();
+        //    Node restored = asset.AddModel(restoredId);
+        //    restored.FromBinary(base64);
+        //    sw.Stop();
+        //    Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
+        //    Debug.Print(restored.ToXml());
+        //    //! Fixup purpose as it cannot be restored (matches the asst.Models keys).
+        //    //
+        //    String xml2 = restored.ToXml().Replace(
+        //        String.Format("purpose=\"{0}\"", restoredId),
+        //        String.Format("purpose=\"{0}\"", modelId));
+        //    Assert.AreEqual(root.ToXml(), xml2);
+        //}
+        /// <summary>
+        /// (Unit Test Method) tests clearing the tree.
+        /// </summary>
+        [TestMethod]
+        public void TestChild_Clear()
+        {
+            // https://en.wikipedia.org/wiki/Tree_traversal
+            WikiExampleTree();
+
+            Assert.AreEqual(root.Count, 1);
+
+            root.Clear();
+
+            Assert.AreEqual(0, root.Count);
+        }
+
+        /// <summary>
         /// (Unit Test Method) tests child comparisment.
         /// </summary>
         [TestMethod]
@@ -200,7 +305,7 @@
             //   |           +-- E
             //   |
             //   +-- G --- I --- H
-            //   
+            //
             // F,B,A,D,C,E,G,I,H
             foreach (Node child in root["F"]["B"]["D"].PrefixEnumerator())
             {
@@ -237,7 +342,7 @@
             //   |           +-- E
             //   |
             //   +-- G --- I --- H
-            //   
+            //
             // A,C,E,D,B,H,I,G,F
             foreach (Node child in root.PostfixEnumerator())
             {
@@ -374,7 +479,7 @@
             Stopwatch sw = new Stopwatch();
 
             sw.Start();
-            String xml = root.ToXml();
+            String xml = root.ToString(false, SerializingFormat.Xml);
             sw.Stop();
             Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
 
@@ -388,13 +493,13 @@
         public void TestChild_Serialize_02()
         {
             // https://en.wikipedia.org/wiki/Tree_traversal
-            WikiExampleTree();
+            WikiExampleTree(asset.AddModel("Wiki"));
 
             Stopwatch sw = new Stopwatch();
 
             sw.Reset();
             sw.Start();
-            String xml1 = root.ToXml();
+            String xml1 = asset["Wiki"].ToString(true, SerializingFormat.Xml);
             sw.Stop();
             Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
 
@@ -402,13 +507,15 @@
 
             sw.Reset();
             sw.Start();
-            restored.FromXml(xml1);
+            //! Note that restored is not restored inside FromString (but the Owner Asset's model collection is).
+            //! So we need an assignment if we want to use restored further on or get it from the asssets nodes.
+            restored.FromString(xml1, true);
             sw.Stop();
             Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
 
             //! Fixup purpose as it cannot be restored (matches the asst.Models keys).
-            // 
-            String xml2 = restored.ToXml().Replace(
+            //
+            String xml2 = asset[restoredId].ToString(true, SerializingFormat.Xml).Replace(
                 String.Format("purpose=\"{0}\"", restoredId),
                 String.Format("purpose=\"{0}\"", modelId));
 
@@ -417,28 +524,28 @@
             Assert.AreEqual(xml1, xml2);
         }
 
-        /// <summary>
-        /// (Unit Test Method) tests binary serialize of structre.
-        /// </summary>
-        [TestMethod]
-        public void TestChild_Serialize_03()
-        {
-            // https://en.wikipedia.org/wiki/Tree_traversal
-            WikiExampleTree();
+        ///// <summary>
+        ///// (Unit Test Method) tests binary serialize of structre.
+        ///// </summary>
+        //[TestMethod]
+        //public void TestChild_Serialize_03()
+        //{
+        // https://en.wikipedia.org/wiki/Tree_traversal
+        //WikiExampleTree(asset.AddModel("Wiki"));
 
-            using (MemoryStream ms = new MemoryStream())
-            {
-                BinaryFormatter bf = new BinaryFormatter();
+        //using (MemoryStream ms = new MemoryStream())
+        //{
+        //    BinaryFormatter bf = new BinaryFormatter();
 
-                Stopwatch sw = new Stopwatch();
+        //    Stopwatch sw = new Stopwatch();
 
-                sw.Reset();
-                sw.Start();
-                bf.Serialize(ms, root);
-                sw.Stop();
-                Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
-            }
-        }
+        //    sw.Reset();
+        //    sw.Start();
+        //    bf.Serialize(ms, root);
+        //    sw.Stop();
+        //    Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
+        //}
+        //}
 
         /// <summary>
         /// (Unit Test Method) tests binary (de)serialize of structure.
@@ -448,198 +555,62 @@
         //{
         //// https://en.wikipedia.org/wiki/Tree_traversal
         //WikiExampleTree();
-
         //using (MemoryStream ms = new MemoryStream())
         //{
         //    Stopwatch sw = new Stopwatch();
-
         //    sw.Reset();
         //    sw.Start();
         //    String base64 = root.ToBinary(true);
         //    sw.Stop();
         //    Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
-
         //    Node restored = asset.AddModel(restoredId);
-
         //    ms.Flush();
         //    ms.Seek(0, SeekOrigin.Begin);
-
         //    sw.Reset();
         //    sw.Start();
         //    restored.FromBinary(base64, true);
         //    sw.Stop();
         //    Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
-
         //    Debug.Print(restored.ToXml());
-
         //    //! Fixup purpose as it cannot be restored (matches the asst.Models keys).
-        //    // 
+        //    //
         //    String xml2 = restored.ToXml().Replace(
         //        String.Format("purpose=\"{0}\"", restoredId),
         //        String.Format("purpose=\"{0}\"", modelId));
-
         //    Assert.AreEqual(root.ToXml(), xml2);
-
         //    //! These should not be equal as we restore only the structure.
         //    Assert.AreNotEqual(root.ToXml(false), xml2);
-
         //    //! These should not be equal as we restore only the structure.
         //    Assert.AreNotEqual(root["F"]["B"]["D"]["C"].Value, restored["F"]["B"]["D"]["C"].Value);
-
         //    Assert.IsNull(restored["F"]["B"]["D"]["C"].Value);
         //    Assert.IsFalse(restored.ToXml().Contains("<value>"));
         //}
         //}
 
-        /// <summary>
-        /// (Unit Test Method) tests binary serialize of structure + data.
-        /// </summary>
-        [TestMethod]
-        public void TestChild_Serialize_05()
-        {
-            // https://en.wikipedia.org/wiki/Tree_traversal
-            WikiExampleTree();
-
-            using (MemoryStream ms = new MemoryStream())
-            {
-                StreamingContext sc = new StreamingContext(StreamingContextStates.All, false);
-
-                BinaryFormatter bf = new BinaryFormatter(null, sc);
-
-                Stopwatch sw = new Stopwatch();
-
-                sw.Reset();
-                sw.Start();
-                bf.Serialize(ms, root);
-                sw.Stop();
-                Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
-            }
-        }
-
-        /// <summary>
-        /// (Unit Test Method) tests binary (de)serialize of structure + data.
-        /// </summary>
+        ///// <summary>
+        ///// (Unit Test Method) tests binary serialize of structure + data.
+        ///// </summary>
         //[TestMethod]
-        //public void TestChild_Serialize_06()
+        //public void TestChild_Serialize_05()
         //{
         //    // https://en.wikipedia.org/wiki/Tree_traversal
-        //    WikiExampleTree();
+        //    WikiExampleTree(asset.AddModel("Wiki"));
 
         //    using (MemoryStream ms = new MemoryStream())
         //    {
-        //        //StreamingContext sc = new StreamingContext(StreamingContextStates.All, false);
+        //        StreamingContext sc = new StreamingContext(StreamingContextStates.All, false);
 
-        //        //BinaryFormatter bf = new BinaryFormatter(null, sc);
+        //        BinaryFormatter bf = new BinaryFormatter(null, sc);
 
         //        Stopwatch sw = new Stopwatch();
 
         //        sw.Reset();
         //        sw.Start();
-        //        String base64 = root.ToBinary();
+        //        bf.Serialize(ms, root);
         //        sw.Stop();
         //        Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
-
-        //        Node restored = asset.AddModel(restoredId);
-
-        //        //sw.Reset();
-        //        sw.Start();
-        //        restored.FromBinary(base64);
-        //        sw.Stop();
-        //        Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
-
-        //        sw.Reset();
-        //        sw.Start();
-        //        Debug.Print(restored.ToXml());
-        //        sw.Stop();
-        //        Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
-
-        //        //! Fixup purpose as it cannot be restored (matches the asst.Models keys).
-        //        // 
-        //        String xml2 = restored.ToXml().Replace(
-        //            String.Format("purpose=\"{0}\"", restoredId),
-        //            String.Format("purpose=\"{0}\"", modelId));
-
-        //        Assert.AreEqual(root.ToXml(), xml2);
-        //        Assert.AreEqual(root["F"]["G"]["I"].Value, restored["F"]["G"]["I"].Value);
         //    }
         //}
-
-        /// <summary>
-        /// (Unit Test Method) tests binary (de)serialize of structure + data.
-        /// </summary>
-        //[TestMethod]
-        //public void TestChild_Serialize_07()
-        //{
-        //    // https://en.wikipedia.org/wiki/Tree_traversal
-        //    WikiExampleTree();
-
-        //    Stopwatch sw = new Stopwatch();
-
-        //    sw.Reset();
-        //    sw.Start();
-        //    String sonly = root.ToBinary(true);
-        //    sw.Stop();
-        //    Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
-
-        //    sw.Reset();
-        //    sw.Start();
-        //    String sandd = root.ToBinary(false);
-        //    sw.Stop();
-        //    Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
-
-        //    Assert.AreNotEqual(sonly, sandd);
-        //}
-
-        /// <summary>
-        /// (Unit Test Method) tests binary (de)serialize of structure + data.
-        /// </summary>
-        //[TestMethod]
-        //public void TestChild_Serialize_08()
-        //{
-        //    // https://en.wikipedia.org/wiki/Tree_traversal
-        //    WikiExampleTree();
-
-        //    Stopwatch sw = new Stopwatch();
-
-        //    sw.Reset();
-        //    sw.Start();
-        //    String base64 = root.ToBinary();
-        //    sw.Stop();
-        //    Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
-        //    Debug.Print(root.ToXml());
-
-        //    sw.Reset();
-        //    sw.Start();
-        //    Node restored = asset.AddModel(restoredId);
-        //    restored.FromBinary(base64);
-        //    sw.Stop();
-        //    Debug.Print("Elapsed: {0} ms", sw.ElapsedMilliseconds);
-        //    Debug.Print(restored.ToXml());
-
-        //    //! Fixup purpose as it cannot be restored (matches the asst.Models keys).
-        //    // 
-        //    String xml2 = restored.ToXml().Replace(
-        //        String.Format("purpose=\"{0}\"", restoredId),
-        //        String.Format("purpose=\"{0}\"", modelId));
-
-        //    Assert.AreEqual(root.ToXml(), xml2);
-        //}
-
-        /// <summary>
-        /// (Unit Test Method) tests clearing the tree.
-        /// </summary>
-        [TestMethod]
-        public void TestChild_Clear()
-        {
-            // https://en.wikipedia.org/wiki/Tree_traversal
-            WikiExampleTree();
-
-            Assert.AreEqual(root.Count, 1);
-
-            root.Clear();
-
-            Assert.AreEqual(0, root.Count);
-        }
 
         /// <summary>
         /// (Unit Test Method) tests root.
@@ -710,6 +681,84 @@
             return F;
         }
 
+        private void WikiExampleTree(Node root)
+        {
+            root.Clear();
+
+            //! Data Still Fails (as it's serialized as an Array).
+            //
+            List<byte> data = new List<byte>();
+            data.AddRange(new byte[] { 1, 2, 3, 4, 5 });
+            short[] sa = new short[] { 1, 2, 3, 4, 5 };
+            sa.ToList<short>();
+            Node F = root.AddChild("F", "F");
+            //Node B = F.AddChild("B", data);
+            Node B = F.AddChild("B", new short[] { 1, 2, 3, 4, 5 });
+            B.AddChild("A", DateTime.Now);
+            //B.AddChild("A1", new DemoClass
+            //{
+            //    a = 15,
+            //    b = "vijftien",
+            //    c = DateTime.Now
+            //});
+            B.AddChild("A2", 42);
+
+            //for (Int32 i = 0; i < 100; i++)
+            //{
+            //    B.AddChild(String.Format("A{0:000}", i), i);
+            //}
+
+            //B.Value = data;
+
+            Node D = B.AddChild("D", DateTime.Now, StorageLocations.Server);
+            //D.AddChild("C", new DemoClass
+            //{
+            //    a = 15,
+            //    b = "vijftien",
+            //    c = DateTime.Now
+            //});
+
+            D.AddChild("E", (Byte)5);
+
+            F.AddChild("G", StorageLocations.Game)
+                .AddChild("I", "I")
+                .AddChild("H", new string[] { "1", "2", "3", "4", "5", "6", "7", "8", "9", "0" }
+                //.AddChild("H", "H"
+                );
+
+            // F +-- B +-- A
+            //   |     +-- D +-- C
+            //   |           +-- E
+            //   |
+            //   +-- G --- I --- H
+        }
+
         #endregion Methods
     }
+
+    #region Nested Types
+    public class Bridge : IBridge, ILog
+    {
+        public void Log(Severity severity, string msg)
+        {
+            Debug.Print("{0} - {1}", severity, msg);
+        }
+    }
+
+    /// <summary>
+    /// (Serializable)a demo class.
+    /// </summary>
+    [Serializable]
+    public class DemoClass
+    {
+        #region Fields
+
+        public int a;
+        public string b;
+        public DateTime c;
+
+        #endregion Fields
+    }
+
+    #endregion Nested Types
 }

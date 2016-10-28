@@ -64,10 +64,9 @@
     </Content>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\AssetManager\RageAssetManager_Portable\RageAssetManager - Portable.csproj">
-      <Project>{7f2712c1-575c-4883-88aa-e5b31070354f}</Project>
-      <Name>RageAssetManager - Portable</Name>
-    </ProjectReference>
+    <Reference Include="RageAssetManager_Portable">
+      <HintPath>..\..\AssetManager\RageAssetManager_Portable\bin\Debug\RageAssetManager_Portable.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

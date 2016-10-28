@@ -491,7 +491,7 @@ namespace UserModel
             return result;
         }
 
-        #endregion IWebServiceRequest2 Members
+        #endregion IWebServiceRequest Members
 
         #region ISerializer Members
 
