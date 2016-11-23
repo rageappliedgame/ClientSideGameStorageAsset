@@ -39,6 +39,9 @@
       <HintPath>..\packages\Newtonsoft.Json.8.0.2\lib\net35\Newtonsoft.Json.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="RageAssetManager">
+      <HintPath>..\..\AssetManager\RageAssetManager\bin\Debug\RageAssetManager.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -85,10 +88,6 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\AssetManager\RageAssetManager\RageAssetManager.csproj">
-      <Project>{da8e9056-2e52-4029-81eb-a2d167614c47}</Project>
-      <Name>RageAssetManager</Name>
-    </ProjectReference>
     <ProjectReference Include="..\GameStorageClientAsset\GameStorageClientAsset.csproj">
       <Project>{cd230d3e-002d-4d8d-abb2-7c1891c18859}</Project>
       <Name>GameStorageClientAsset</Name>
