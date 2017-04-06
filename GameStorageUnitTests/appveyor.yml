@@ -13,9 +13,9 @@ environment:
     clone_folder: c:\projects\myproject
 
 artifacts:
-  - path: bin\debug\GameStorageClientAsset.dll
+  - path: bin\Debug\GameStorageClientAsset.dll
     name: GameStorageClientAsset
-  - path: bin\debug\RageAssetManager.dll
+  - path: bin\Debug\RageAssetManager.dll
     name: RageAssetManager
 
 test:
