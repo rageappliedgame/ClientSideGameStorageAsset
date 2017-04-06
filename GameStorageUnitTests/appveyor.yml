@@ -13,20 +13,20 @@ environment:
     clone_folder: c:\projects\myproject
 
 artifacts:
-- path: bin\debug\GameStorageClientAsset.dll
-  name: GameStorageClientAsset.dll
-- path: bin\debug\RageAssetManager.dll
-  name: RageAssetManager.dll
+  - path: bin\debug\GameStorageClientAsset.dll
+    name: GameStorageClientAsset
+  - path: bin\debug\RageAssetManager.dll
+    name: RageAssetManager
 
 test:
   assemblies:
    only:
     - GameStorageUnitTests\GameStorageUnitTests.csproj
 
-before_deploy:
-- cmd: >-
-    md ..\AssetManager\RageAssetManager\bin\Debug
-    copy bin\debug\RageAssetManager.dll ..\AssetManager\RageAssetManager\bin\Debug\RageAssetManager.dll
+#before_deploy:
+#- cmd: >-
+#    md ..\AssetManager\RageAssetManager\bin\Debug
+#    copy bin\debug\RageAssetManager.dll ..\AssetManager\RageAssetManager\bin\Debug\RageAssetManager.dll
 
 after_test: 
 # generate report for NUnit testing framework:
