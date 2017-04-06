@@ -17,6 +17,11 @@ artifacts:
 - path: bin\debug\RageAssetManager.dll
   name: RageAssetManager
 
+before_deploy:
+- cmd: >-
+    md ..\AssetManager\RageAssetManager\bin\Debug
+    copy bin\debug\RageAssetManager.dll ..\AssetManager\RageAssetManager\bin\Debug\RageAssetManager.dll
+
 after_test: 
 # generate report for NUnit testing framework:
 #    -cmd: packages\OpenCover.4.6.166\tools\OpenCover.Console.exe -register:user -filter:"+[*]*" -target:"packages\NUnit.Runners.2.6.4\tools\nunit-console.exe" -targetargs:"/noshadow /domain:single YOURPROJECT.Tests\bin\debug\YOURPROJECT.Tests.dll" -output:coverage.xml
