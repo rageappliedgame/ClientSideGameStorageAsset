@@ -5,24 +5,20 @@ install:
 
 build:
   project: GameStorageClientAsset.sln
-  verbosity: RAGE GameStorage Client Asset
-
+  verbosity: normal
 environment:
     COVERALLS_REPO_TOKEN:  
        secure: mVTylm9EqrgvsVaMomOpLcF9Bl+Lw1qXW56XMg1UrYqIr/jUKdZWQl0fSZl94U/u
-    clone_folder: c:\projects\myproject
-
+    clone_folder: c:\projects\clientsidegamestorageasset
+test:
+  assemblies:
+   only:
+    - GameStorageUnitTests\GameStorageUnitTests.csproj
 artifacts:
   - path: bin\Debug\GameStorageClientAsset.dll
     name: GameStorageClientAsset
   - path: bin\Debug\RageAssetManager.dll
     name: RageAssetManager
-
-test:
-  assemblies:
-   only:
-    - GameStorageUnitTests\GameStorageUnitTests.csproj
-
 #before_deploy:
 #- cmd: >-
 #    md ..\AssetManager\RageAssetManager\bin\Debug
