@@ -23,10 +23,12 @@ test:
     - GameStorageUnitTests\GameStorageUnitTests.csproj
 
 artifacts:
-  - path: bin\Debug\GameStorageClientAsset.dll
+  - path: GameStorageUnitTests\bin\Debug\GameStorageClientAsset.dll
     name: GameStorageClientAsset.dll
-  - path: bin\Debug\RageAssetManager.dll
+  - path: GameStorageUnitTests\bin\Debug\RageAssetManager.dll
     name: RageAssetManager.dll
+  - path: GameStorageUnitTests\appveyor.yml
+    name: test
 
 #before_deploy:
 #- cmd: >-
