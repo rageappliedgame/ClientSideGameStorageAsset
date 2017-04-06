@@ -6,7 +6,7 @@ install:
 - nuget restore
 
 before_build:
-- cmd: dir
+- cmd: dir /s
 
 build:
   project: GameStorageClientAsset.sln
