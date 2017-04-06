@@ -10,10 +10,11 @@ build:
 environment:
     COVERALLS_REPO_TOKEN:  
        secure: mVTylm9EqrgvsVaMomOpLcF9Bl+Lw1qXW56XMg1UrYqIr/jUKdZWQl0fSZl94U/u
+
 artefacts:
   -path: bin\debug\GameStorageClientAsset.dll
    name: GameStorageClientAsset
-  -path: C:\Rage\AssetManager\RageAssetManager\bin\Debug\RageAssetManager.dll
+  -path: bin\debug\RageAssetManager.dll
    name: RageAssetManager
 
 after_test: 
