@@ -1,0 +1,22 @@
+version: 1.0.{build}
+
+install:
+    - nuget restore
+    
+build:
+  project: GameStorageClientAsset.sln
+  verbosity: RAGE GameStorage Client Asset
+
+environment:
+    COVERALLS_REPO_TOKEN:  
+       secure: mVTylm9EqrgvsVaMomOpLcF9Bl+Lw1qXW56XMg1UrYqIr/jUKdZWQl0fSZl94U/u
+ 
+after_test: 
+# generate report for NUnit testing framework:
+#    -cmd: packages\OpenCover.4.6.166\tools\OpenCover.Console.exe -register:user -filter:"+[*]*" -target:"packages\NUnit.Runners.2.6.4\tools\nunit-console.exe" -targetargs:"/noshadow /domain:single YOURPROJECT.Tests\bin\debug\YOURPROJECT.Tests.dll" -output:coverage.xml
+ 	 -cmd:packages\OpenCover.4.6.519\tools\OpenCover.Console.exe -register:user -filter:"+[*]*" -target:"packages\NUnit.ConsoleRunner.3.2.1\tools\nunit3-console.exe" -targetargs:"/domain:single YOURPROJECT.Tests/bin/debug/YOURPROJECT.Tests.dll" -output:coverage.xml
+
+# generate report for MSTest testing framework:
+#    -cmd: packages\OpenCover.4.6.166\tools\OpenCover.Console.exe -register:user -filter:"+[*]*" -target:"C:\Program Files (x86)\Microsoft Visual Studio 12.0\Common7\IDE\MSTest.exe" -targetargs:"/testcontainer:YOURPROJECT.Tests/bin/debug/YOURPROJECT.Tests.dll" -output:coverage.xml
+        
+    - cmd: packages\coveralls.io.1.3.4\tools\coveralls.net.exe --opencover coverage.xml

@@ -234,7 +234,6 @@ _Pvt_Extensions
 
 # FAKE - F# Make
 .fake/
-*.sln
 GameStorageClientAsset/PayLoad.cs
 GameStorageClientAsset/ModelAsset.cs
 GameStorageTestApp/ExampleXml.xml
