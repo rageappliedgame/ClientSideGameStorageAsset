@@ -67,7 +67,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="appveyor.yml" />
+    <Content Include="appveyor.yml" />
     <None Include="packages.config" />
   </ItemGroup>
   <Choose>
