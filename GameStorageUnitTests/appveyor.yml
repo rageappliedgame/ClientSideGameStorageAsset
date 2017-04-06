@@ -10,12 +10,18 @@ build:
 environment:
     COVERALLS_REPO_TOKEN:  
        secure: mVTylm9EqrgvsVaMomOpLcF9Bl+Lw1qXW56XMg1UrYqIr/jUKdZWQl0fSZl94U/u
+    clone_folder: c:\projects\myproject
 
 artifacts:
 - path: bin\debug\GameStorageClientAsset.dll
   name: GameStorageClientAsset
 - path: bin\debug\RageAssetManager.dll
   name: RageAssetManager
+
+test:
+  assemblies:
+   only:
+    - GameStorageUnitTests\GameStorageUnitTests.csproj
 
 before_deploy:
 - cmd: >-
