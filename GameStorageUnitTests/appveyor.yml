@@ -14,9 +14,9 @@ environment:
 
 artifacts:
 - path: bin\debug\GameStorageClientAsset.dll
-  name: GameStorageClientAsset
+  name: GameStorageClientAsset.dll
 - path: bin\debug\RageAssetManager.dll
-  name: RageAssetManager
+  name: RageAssetManager.dll
 
 test:
   assemblies:
