@@ -1471,6 +1471,7 @@ namespace AssetPackage
                        requestHeaders = headers,
                        //! allowedResponsCodes,     // TODO default is ok
                        body = body, // or method.Equals("GET")?string.Empty:body
+                       hasBinaryResponse = false,
                    }, out response);
             }
 
