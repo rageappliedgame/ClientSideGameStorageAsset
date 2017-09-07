@@ -366,6 +366,33 @@ namespace AssetPackage
         }
 
         /// <summary>
+        /// Model exists.
+        /// </summary>
+        ///
+        /// <param name="purpose"> The purpose. </param>
+        ///
+        /// <returns>
+        /// True if it succeeds, false if it fails.
+        /// </returns>
+        public Boolean ModelExists(String purpose)
+        {
+            return Models.ContainsKey(purpose);
+        }
+
+        /// <summary>
+        /// Removes the model described by purpose.
+        /// </summary>
+        ///
+        /// <param name="purpose"> The purpose. </param>
+        public void RemoveModel(String purpose)
+        {
+            if (ModelExists(purpose))
+            {
+                Models[purpose].Clear();
+                Models.Remove(purpose);
+            }
+        }
+        /// <summary>
         /// Checks the health of the UCM Tracker.
         /// </summary>
         ///

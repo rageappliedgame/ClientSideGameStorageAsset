@@ -239,3 +239,5 @@ GameStorageClientAsset/ModelAsset.cs
 GameStorageTestApp/ExampleXml.xml
 /GameStorageClientAsset/todo.txt
 /GameStorageClientAsset/SavedCode.txt
+*.xml
+/.axoCover
