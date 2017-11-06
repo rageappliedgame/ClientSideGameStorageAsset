@@ -17,6 +17,8 @@
  */
 namespace AssetPackage
 {
+    using System;
+
     /// <summary>
     /// Values that represent serializable formats.
     /// </summary>
@@ -74,16 +76,14 @@ namespace AssetPackage
         /// Deserialize this object to the given textual representation and format.
         /// </summary>
         ///
-        /// <param name="type"> The type to deserialize. </param>
-        ///
-        /// <typeparam name="T"> Generic type parameter. </typeparam>
+        /// <param name="t">      A Type to process. </param>
         /// <param name="text">   The text to deserialize. </param>
         /// <param name="format"> Describes the format to use. </param>
         ///
         /// <returns>
         /// An object.
         /// </returns>
-        object Deserialize<T>(string text, SerializingFormat format);
+        object Deserialize(Type t, string text, SerializingFormat format);
 
         /// <summary>
         /// Serialize this object to the given textual representation and format.

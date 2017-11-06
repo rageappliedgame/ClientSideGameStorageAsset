@@ -431,20 +431,36 @@ namespace UserModel
             return false;
         }
 
+        ///// <summary>
+        ///// Deserialize this object to the given textual representation and format.
+        ///// </summary>
+        /////
+        ///// <param name="text">   The text to deserialize. </param>
+        ///// <param name="type">   The type to deserialize. </param>
+        ///// <param name="format"> Describes the format to use. </param>
+        /////
+        ///// <returns>
+        ///// An object.
+        ///// </returns>
+        //public object Deserialize<T>(string text, SerializingFormat format)
+        //{
+        //    return JsonConvert.DeserializeObject(text, typeof(T));
+        //}
+
         /// <summary>
         /// Deserialize this object to the given textual representation and format.
         /// </summary>
         ///
+        /// <param name="t">      A Type to process. </param>
         /// <param name="text">   The text to deserialize. </param>
-        /// <param name="type">   The type to deserialize. </param>
         /// <param name="format"> Describes the format to use. </param>
         ///
         /// <returns>
         /// An object.
         /// </returns>
-        public object Deserialize<T>(string text, SerializingFormat format)
+        public object Deserialize(Type t, string text, SerializingFormat format)
         {
-            return JsonConvert.DeserializeObject(text, typeof(T));
+            return JsonConvert.DeserializeObject(text, t);
         }
 
         /// <summary>

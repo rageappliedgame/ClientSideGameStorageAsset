@@ -597,5 +597,21 @@ namespace UserModel
         }
 
         #endregion Nested Types
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            BuildDemo();
+
+            storage.SaveData("Wiki", StorageLocations.Local, SerializingFormat.Json);
+
+            textBox2.Text = storage["Wiki"].ToString(false, SerializingFormat.Json);
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            storage.LoadData("Wiki", StorageLocations.Local, SerializingFormat.Json);
+
+            textBox2.Text = storage["Wiki"].ToString(false, SerializingFormat.Json);
+        }
     }
 }

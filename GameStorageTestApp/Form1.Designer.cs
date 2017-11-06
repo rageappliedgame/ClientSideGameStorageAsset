@@ -40,6 +40,8 @@
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.btnSaveStructure = new System.Windows.Forms.Button();
             this.btnLoadStructure = new System.Windows.Forms.Button();
+            this.button1 = new System.Windows.Forms.Button();
+            this.button2 = new System.Windows.Forms.Button();
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
             this.splitContainer1.SuspendLayout();
@@ -49,19 +51,17 @@
             // 
             this.textBox1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.textBox1.Location = new System.Drawing.Point(0, 0);
-            this.textBox1.Margin = new System.Windows.Forms.Padding(8, 7, 8, 7);
             this.textBox1.Multiline = true;
             this.textBox1.Name = "textBox1";
             this.textBox1.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.textBox1.Size = new System.Drawing.Size(933, 794);
+            this.textBox1.Size = new System.Drawing.Size(349, 333);
             this.textBox1.TabIndex = 1;
             // 
             // btnVirtual
             // 
-            this.btnVirtual.Location = new System.Drawing.Point(1587, 932);
-            this.btnVirtual.Margin = new System.Windows.Forms.Padding(8, 7, 8, 7);
+            this.btnVirtual.Location = new System.Drawing.Point(595, 420);
             this.btnVirtual.Name = "btnVirtual";
-            this.btnVirtual.Size = new System.Drawing.Size(333, 55);
+            this.btnVirtual.Size = new System.Drawing.Size(125, 23);
             this.btnVirtual.TabIndex = 3;
             this.btnVirtual.Text = "Virtual Values";
             this.btnVirtual.UseVisualStyleBackColor = true;
@@ -69,10 +69,9 @@
             // 
             // btnLoadData
             // 
-            this.btnLoadData.Location = new System.Drawing.Point(597, 932);
-            this.btnLoadData.Margin = new System.Windows.Forms.Padding(8, 7, 8, 7);
+            this.btnLoadData.Location = new System.Drawing.Point(224, 391);
             this.btnLoadData.Name = "btnLoadData";
-            this.btnLoadData.Size = new System.Drawing.Size(333, 55);
+            this.btnLoadData.Size = new System.Drawing.Size(125, 23);
             this.btnLoadData.TabIndex = 4;
             this.btnLoadData.Text = "3) Data <- Server";
             this.btnLoadData.UseVisualStyleBackColor = true;
@@ -82,19 +81,17 @@
             // 
             this.textBox2.Dock = System.Windows.Forms.DockStyle.Fill;
             this.textBox2.Location = new System.Drawing.Point(0, 0);
-            this.textBox2.Margin = new System.Windows.Forms.Padding(8, 7, 8, 7);
             this.textBox2.Multiline = true;
             this.textBox2.Name = "textBox2";
             this.textBox2.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.textBox2.Size = new System.Drawing.Size(941, 794);
+            this.textBox2.Size = new System.Drawing.Size(354, 333);
             this.textBox2.TabIndex = 6;
             // 
             // btnConnect
             // 
-            this.btnConnect.Location = new System.Drawing.Point(35, 839);
-            this.btnConnect.Margin = new System.Windows.Forms.Padding(8, 7, 8, 7);
+            this.btnConnect.Location = new System.Drawing.Point(13, 352);
             this.btnConnect.Name = "btnConnect";
-            this.btnConnect.Size = new System.Drawing.Size(200, 55);
+            this.btnConnect.Size = new System.Drawing.Size(75, 23);
             this.btnConnect.TabIndex = 7;
             this.btnConnect.Text = "1) Connect";
             this.btnConnect.UseVisualStyleBackColor = true;
@@ -102,10 +99,9 @@
             // 
             // btnSaveLoadStructure
             // 
-            this.btnSaveLoadStructure.Location = new System.Drawing.Point(248, 839);
-            this.btnSaveLoadStructure.Margin = new System.Windows.Forms.Padding(8, 7, 8, 7);
+            this.btnSaveLoadStructure.Location = new System.Drawing.Point(93, 352);
             this.btnSaveLoadStructure.Name = "btnSaveLoadStructure";
-            this.btnSaveLoadStructure.Size = new System.Drawing.Size(682, 55);
+            this.btnSaveLoadStructure.Size = new System.Drawing.Size(256, 23);
             this.btnSaveLoadStructure.TabIndex = 8;
             this.btnSaveLoadStructure.Text = "2) Stucture <-> Server";
             this.btnSaveLoadStructure.UseVisualStyleBackColor = true;
@@ -116,20 +112,18 @@
             this.textBox3.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.textBox3.Location = new System.Drawing.Point(35, 1075);
-            this.textBox3.Margin = new System.Windows.Forms.Padding(8, 7, 8, 7);
+            this.textBox3.Location = new System.Drawing.Point(13, 451);
             this.textBox3.Multiline = true;
             this.textBox3.Name = "textBox3";
             this.textBox3.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.textBox3.Size = new System.Drawing.Size(1462, 327);
+            this.textBox3.Size = new System.Drawing.Size(551, 139);
             this.textBox3.TabIndex = 9;
             // 
             // btnSaveData
             // 
-            this.btnSaveData.Location = new System.Drawing.Point(248, 932);
-            this.btnSaveData.Margin = new System.Windows.Forms.Padding(8, 7, 8, 7);
+            this.btnSaveData.Location = new System.Drawing.Point(93, 391);
             this.btnSaveData.Name = "btnSaveData";
-            this.btnSaveData.Size = new System.Drawing.Size(333, 55);
+            this.btnSaveData.Size = new System.Drawing.Size(125, 23);
             this.btnSaveData.TabIndex = 10;
             this.btnSaveData.Text = "2) Data -> Server";
             this.btnSaveData.UseVisualStyleBackColor = true;
@@ -137,10 +131,9 @@
             // 
             // btnFilter
             // 
-            this.btnFilter.Location = new System.Drawing.Point(1238, 932);
-            this.btnFilter.Margin = new System.Windows.Forms.Padding(8, 7, 8, 7);
+            this.btnFilter.Location = new System.Drawing.Point(464, 420);
             this.btnFilter.Name = "btnFilter";
-            this.btnFilter.Size = new System.Drawing.Size(333, 55);
+            this.btnFilter.Size = new System.Drawing.Size(125, 23);
             this.btnFilter.TabIndex = 11;
             this.btnFilter.Text = "Enumerate Filtered";
             this.btnFilter.UseVisualStyleBackColor = true;
@@ -150,8 +143,7 @@
             // 
             this.splitContainer1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.splitContainer1.Location = new System.Drawing.Point(35, 29);
-            this.splitContainer1.Margin = new System.Windows.Forms.Padding(8, 7, 8, 7);
+            this.splitContainer1.Location = new System.Drawing.Point(13, 12);
             this.splitContainer1.Name = "splitContainer1";
             // 
             // splitContainer1.Panel1
@@ -161,17 +153,15 @@
             // splitContainer1.Panel2
             // 
             this.splitContainer1.Panel2.Controls.Add(this.textBox2);
-            this.splitContainer1.Size = new System.Drawing.Size(1885, 794);
-            this.splitContainer1.SplitterDistance = 933;
-            this.splitContainer1.SplitterWidth = 11;
+            this.splitContainer1.Size = new System.Drawing.Size(707, 333);
+            this.splitContainer1.SplitterDistance = 349;
             this.splitContainer1.TabIndex = 13;
             // 
             // btnSaveStructure
             // 
-            this.btnSaveStructure.Location = new System.Drawing.Point(1238, 839);
-            this.btnSaveStructure.Margin = new System.Windows.Forms.Padding(8, 7, 8, 7);
+            this.btnSaveStructure.Location = new System.Drawing.Point(464, 352);
             this.btnSaveStructure.Name = "btnSaveStructure";
-            this.btnSaveStructure.Size = new System.Drawing.Size(333, 55);
+            this.btnSaveStructure.Size = new System.Drawing.Size(125, 23);
             this.btnSaveStructure.TabIndex = 15;
             this.btnSaveStructure.Text = "1) Structure -> Local";
             this.btnSaveStructure.UseVisualStyleBackColor = true;
@@ -179,20 +169,41 @@
             // 
             // btnLoadStructure
             // 
-            this.btnLoadStructure.Location = new System.Drawing.Point(1587, 839);
-            this.btnLoadStructure.Margin = new System.Windows.Forms.Padding(8, 7, 8, 7);
+            this.btnLoadStructure.Location = new System.Drawing.Point(595, 352);
             this.btnLoadStructure.Name = "btnLoadStructure";
-            this.btnLoadStructure.Size = new System.Drawing.Size(333, 55);
+            this.btnLoadStructure.Size = new System.Drawing.Size(125, 23);
             this.btnLoadStructure.TabIndex = 16;
             this.btnLoadStructure.Text = "2) Structure <- Local";
             this.btnLoadStructure.UseVisualStyleBackColor = true;
             this.btnLoadStructure.Click += new System.EventHandler(this.btnLoadStructure_Click);
             // 
+            // button1
+            // 
+            this.button1.Location = new System.Drawing.Point(464, 391);
+            this.button1.Name = "button1";
+            this.button1.Size = new System.Drawing.Size(125, 23);
+            this.button1.TabIndex = 17;
+            this.button1.Text = "2) Data -> Local";
+            this.button1.UseVisualStyleBackColor = true;
+            this.button1.Click += new System.EventHandler(this.button1_Click);
+            // 
+            // button2
+            // 
+            this.button2.Location = new System.Drawing.Point(595, 391);
+            this.button2.Name = "button2";
+            this.button2.Size = new System.Drawing.Size(125, 23);
+            this.button2.TabIndex = 18;
+            this.button2.Text = "3) Local -> Data";
+            this.button2.UseVisualStyleBackColor = true;
+            this.button2.Click += new System.EventHandler(this.button2_Click);
+            // 
             // Form1
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(16F, 31F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1952, 1474);
+            this.ClientSize = new System.Drawing.Size(732, 618);
+            this.Controls.Add(this.button2);
+            this.Controls.Add(this.button1);
             this.Controls.Add(this.btnLoadStructure);
             this.Controls.Add(this.btnSaveStructure);
             this.Controls.Add(this.splitContainer1);
@@ -203,7 +214,6 @@
             this.Controls.Add(this.btnConnect);
             this.Controls.Add(this.btnLoadData);
             this.Controls.Add(this.btnVirtual);
-            this.Margin = new System.Windows.Forms.Padding(8, 7, 8, 7);
             this.Name = "Form1";
             this.SizeGripStyle = System.Windows.Forms.SizeGripStyle.Show;
             this.Text = "GameStorage Client Tester";
@@ -230,6 +240,8 @@
         private System.Windows.Forms.SplitContainer splitContainer1;
         private System.Windows.Forms.Button btnSaveStructure;
         private System.Windows.Forms.Button btnLoadStructure;
+        private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.Button button2;
     }
 }
 

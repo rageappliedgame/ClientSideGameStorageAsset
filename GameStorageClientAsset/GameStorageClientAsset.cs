@@ -1156,7 +1156,7 @@ namespace AssetPackage
         {
             //! Get a list of things to deserialize.
             //
-            NodePaths sNodes = (NodePaths)serializer.Deserialize<NodePaths>(data, format);
+            NodePaths sNodes = (NodePaths)serializer.Deserialize(typeof(NodePaths), data, format);
 
             for (Int32 i = 0; i < sNodes.Nodes.Length; i++)
             {
@@ -1202,7 +1202,7 @@ namespace AssetPackage
         {
             //! Get a list of things to deserialize.
             //
-            NodePaths sNodes = (NodePaths)serializer.Deserialize<NodePaths>(data, format);
+            NodePaths sNodes = (NodePaths)serializer.Deserialize(typeof(NodePaths), data, format);
 
             for (Int32 i = 0; i < sNodes.Nodes.Length; i++)
             {
@@ -1255,11 +1255,11 @@ namespace AssetPackage
         {
             //! Get a list of things to deserialize.
             //
-            NodeStringValues sNodes = (NodeStringValues)serializer.Deserialize<NodeStringValues>(data, format);
+            NodeStringValues sNodes = (NodeStringValues)serializer.Deserialize(typeof(NodeStringValues), data, format);
 
             //! This works without types[] paramaters as there is only a single matching method.
             //
-            MethodInfo method = serializer.GetType().MethodInfoFix("Deserialize" /*, new Type[] { typeof(String), typeof(SerializingFormat) }*/);
+            //MethodInfo method = serializer.GetType().MethodInfoFix("Deserialize", new Type[] { typeof(Type), typeof(String), typeof(SerializingFormat) });
 
             //! Nicer but fails to compile on the <T> of p.Deserialize.
             //
@@ -1303,11 +1303,12 @@ namespace AssetPackage
                 {
                     //! Create a Generic Method to call the Deserializer.
                     //
-                    MethodInfo genericMethod = method.MakeGenericMethod(tt);
+                    //MethodInfo genericMethod = method.MakeGenericMethod(tt);
 
                     //! Invoke the Deserializer.
                     //
-                    fixNodeValue.ValueAsObject = genericMethod.Invoke(serializer, new Object[] { nodeStringValue.Value, format });
+                    fixNodeValue.ValueAsObject = serializer.Deserialize(tt, nodeStringValue.Value, format);
+                    //fixNodeValue.ValueAsObject = genericMethod.Invoke(serializer, new Object[] { nodeStringValue.Value, format });
                 }
                 //! Handle Array
                 //
@@ -1320,12 +1321,13 @@ namespace AssetPackage
 
                     //! Create a Generic Method to call the Deserializer.
                     //
-                    MethodInfo genericMethod = method.MakeGenericMethod(nodeValue.GetType());
+                    // MethodInfo genericMethod = method.MakeGenericMethod(nodeValue.GetType());
 
                     //! Deserialize into the Generic Class and extract the Value.
                     //
                     String s = String.Format("{{ \"Value\": {0} }}", nodeStringValue.Value);
-                    nodeValue = (INodeValue)genericMethod.Invoke(serializer, new Object[] { s, format });
+                    //nodeValue = (INodeValue)genericMethod.Invoke(serializer, new Object[] { s, format });
+                    nodeValue = (INodeValue)serializer.Deserialize(nodeValue.GetType(), s, format);
                     fixNodeValue.ValueAsObject = nodeValue.GetValue();
                 }
                 //! Handle Everything Else with Convert
@@ -1361,11 +1363,15 @@ namespace AssetPackage
         {
             //! Get a list of things to deserialize.
             //
-            NodeStringValues sNodes = (NodeStringValues)serializer.Deserialize<NodeStringValues>(data, format);
+            NodeStringValues sNodes = (NodeStringValues)serializer.Deserialize(typeof(NodeStringValues), data, format);
 
             //! This works without types[] paramaters as there is only a single matching method.
             //
-            MethodInfo method = serializer.GetType().MethodInfoFix("Deserialize" /*, new Type[] { typeof(String), typeof(SerializingFormat) }*/);
+#warning TODO method can probably be replaced by serializer.Deserialize() calls.
+#warning TODO test new interface with Unity and Xamarin.
+#warning TODO Remove obsolete/commented code.
+
+            //MethodInfo method = serializer.GetType().MethodInfoFix("Deserialize", new Type[] { typeof(Type), typeof(String), typeof(SerializingFormat) });
 
             //! Nicer but fails to compile on the <T> of p.Deserialize.
             //
@@ -1402,11 +1408,13 @@ namespace AssetPackage
 
                 //! Create a Generic Method to call the Deserializer.
                 //
-                MethodInfo genericMethod = method.MakeGenericMethod(tt);
+                //MethodInfo genericMethod = method.MakeGenericMethod(tt);
+                //MethodInfo genericMethod = method.MakeGenericMethod(tt);
 
                 //! Invoke the Deserializer.
                 //
-                fixNodeValue.ValueAsObject = genericMethod.Invoke(serializer, new Object[] { nodeStringValue.Value, format });
+                fixNodeValue.ValueAsObject = serializer.Deserialize(tt, nodeStringValue.Value, format);
+                //fixNodeValue.ValueAsObject = method.Invoke(serializer, new Object[] { tt, nodeStringValue.Value, format });
                 fixNodeValue.Path = nodeStringValue.Path;
                 fixNodeValue.ValueType = nodeStringValue.ValueType;
 
@@ -2103,7 +2111,7 @@ namespace AssetPackage
         #region Nested Types
 
         /// <summary>
-        /// An internal XML serializer.
+        /// An internal XML ISerializer implementation that caching serializers used.
         /// </summary>
         private class InternalXmlSerializer : ISerializer
         {
@@ -2136,26 +2144,39 @@ namespace AssetPackage
 
             #region Methods
 
-            /// <summary>
-            /// Deserialize this object to the given textual representation and format.
-            /// </summary>
-            ///
-            /// <typeparam name="T"> Generic type parameter. </typeparam>
-            /// <param name="text">   The text to deserialize. </param>
-            /// <param name="format"> Describes the format to use. </param>
-            ///
-            /// <returns>
-            /// An object.
-            /// </returns>
-            public object Deserialize<T>(string text, SerializingFormat format)
+            public object Deserialize(Type t, string text, SerializingFormat format)
             {
-                XmlSerializer ser = GetSerializer(typeof(T));
+                XmlSerializer ser = GetSerializer(t);
 
                 using (MemoryStream ms = new MemoryStream(Encoding.UTF8.GetBytes(text)))
                 {
-                    return (T)ser.Deserialize(ms);
+                    return ser.Deserialize(ms);
                 }
             }
+
+            //            /// <summary>
+            //            /// Deserialize this object to the given textual representation and format.
+            //            /// </summary>
+            //            ///
+            //            /// <typeparam name="T"> Generic type parameter. </typeparam>
+            //            /// <param name="text">   The text to deserialize. </param>
+            //            /// <param name="format"> Describes the format to use. </param>
+            //            ///
+            //            /// <returns>
+            //            /// An object.
+            //            /// </returns>
+            //            /// 
+            //            public object Deserialize<T>(string text, SerializingFormat format)
+            //            {
+            //#warning Obtaining a method with a generic by reflection seems to cause problems with Unity's codestripping with the IL2CPP tool.
+
+            //                XmlSerializer ser = GetSerializer(typeof(T));
+
+            //                using (MemoryStream ms = new MemoryStream(Encoding.UTF8.GetBytes(text)))
+            //                {
+            //                    return (T)ser.Deserialize(ms);
+            //                }
+            //            }
 
             /// <summary>
             /// Serialize this object to the given textual representation and format.
