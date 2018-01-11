@@ -82,7 +82,7 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Resources\ModelAsset.VersionAndDependencies.xml" />
+    <EmbeddedResource Include="Resources\GameStorageClientAsset.VersionAndDependencies.xml" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="License.txt" />

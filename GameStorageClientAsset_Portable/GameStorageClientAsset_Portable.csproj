@@ -59,9 +59,9 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="..\GameStorageClientAsset\Resources\GameStorageClientAsset.VersionAndDependencies.xml">
+    <EmbeddedResource Include="..\GameStorageClientAsset\Resources\GameStorageClientAsset.VersionAndDependencies.xml">
       <Link>Resources\GameStorageClientAsset.VersionAndDependencies.xml</Link>
-    </Content>
+    </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
     <Reference Include="RageAssetManager_Portable">

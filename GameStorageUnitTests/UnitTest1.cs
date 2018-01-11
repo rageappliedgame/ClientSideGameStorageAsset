@@ -684,6 +684,25 @@ namespace NodeTests
             DumpNode(root);
         }
 
+        [TestMethod]
+        public void TestTypeConversions()
+        {
+            root.Clear();
+            Int32 int32 = 42;
+
+            root.AddChild("Value", int32);
+
+            asset.SaveStructure(modelId, StorageLocations.Local, SerializingFormat.Xml);
+            asset.SaveData(modelId, StorageLocations.Local, SerializingFormat.Xml);
+
+            asset.RemoveModel(modelId);
+
+            asset.LoadStructure(modelId, StorageLocations.Local, SerializingFormat.Xml);
+            asset.LoadData(modelId, StorageLocations.Local, SerializingFormat.Xml);
+
+            Assert.AreEqual(int32.GetType(), asset[modelId]["Value"].Value.GetType());
+        }
+
         private static void DumpNode(Node node)
         {
             Debug.Print("Path: {0}", node.Path);
@@ -795,7 +814,7 @@ namespace NodeTests
     }
 
     #region Nested Types
-    public class Bridge : IBridge, ILog, IVirtualProperties
+    public class Bridge : IBridge, ILog, IVirtualProperties, IDataStorage
     {
 
         /// <summary>
@@ -821,6 +840,42 @@ namespace NodeTests
         public void Log(Severity severity, string msg)
         {
             Debug.Print("{0} - {1}", severity, msg);
+        }
+
+        private Dictionary<String, String> files = new Dictionary<String, String>();
+
+        public bool Delete(string fileId)
+        {
+            if (Exists(fileId))
+            {
+                files.Remove(fileId);
+
+                return true;
+            }
+
+            return false;
+        }
+
+        public bool Exists(string fileId)
+        {
+            return files.ContainsKey(fileId);
+        }
+
+        public string[] Files()
+        {
+            return files.Keys.ToArray();
+        }
+
+        public string Load(string fileId)
+        {
+            Debug.Print($"{fileId}={files[fileId]}");
+            return files[fileId];
+        }
+
+        public void Save(string fileId, string fileData)
+        {
+            Debug.Print($"{fileId}={fileData}");
+            files[fileId] = fileData;
         }
     }
 
