@@ -77,6 +77,10 @@ namespace UserModel
             storage.AddModel("Test");
 
             storage.AddModel("Wiki");
+            
+            //! Pre-register DemoClass so it's known to the GSM.
+            // 
+            storage.Types.Add(typeof(DemoClass).FullName, typeof(DemoClass));
 
             (storage.Settings as GameStorageClientAssetSettings).Host = "145.20.132.23";
             (storage.Settings as GameStorageClientAssetSettings).A2Port = 3000;
@@ -602,14 +606,31 @@ namespace UserModel
         {
             BuildDemo();
 
-            storage.SaveData("Wiki", StorageLocations.Local, SerializingFormat.Json);
+            Stopwatch sw = new Stopwatch();
+            {
+                sw.Start();
 
+                storage.SaveData("Wiki", StorageLocations.Local, SerializingFormat.Json);
+
+                sw.Stop();
+
+                Debug.Print($"{sw.ElapsedMilliseconds} ms");
+            }
             textBox2.Text = storage["Wiki"].ToString(false, SerializingFormat.Json);
         }
 
         private void button2_Click(object sender, EventArgs e)
         {
-            storage.LoadData("Wiki", StorageLocations.Local, SerializingFormat.Json);
+            Stopwatch sw = new Stopwatch();
+            {
+                sw.Start();
+
+                storage.LoadData("Wiki", StorageLocations.Local, SerializingFormat.Json);
+
+                sw.Stop();
+
+                Debug.Print($"{sw.ElapsedMilliseconds} ms");
+            }
 
             textBox2.Text = storage["Wiki"].ToString(false, SerializingFormat.Json);
         }
