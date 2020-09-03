@@ -77,6 +77,10 @@ namespace UserModel
 
             storage.AddModel("Wiki");
 
+            //! Pre-register DemoClass so it's known to the GSM.
+            // 
+            storage.Types.Add(typeof(DemoClass).FullName, typeof(DemoClass));
+
             (storage.Settings as GameStorageClientAssetSettings).Host = "145.20.132.23";
             (storage.Settings as GameStorageClientAssetSettings).A2Port = 3000;
             (storage.Settings as GameStorageClientAssetSettings).Port = 3400;
